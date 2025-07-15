@@ -8,16 +8,25 @@ CFLAGS		=	-Werror -Wextra -Wall
 INCLUDES	=	-Iincludes
 
 # sources
-SRCS		=	srcs/main.c
+SRCS		=	$(wildcard srcs/*.c)
+
+# library
+LIBS		=	-lpcap
 
 # target
 TARGET		=	http_capture
 
-# 빌드 규칙
+# build rule
 all: $(TARGET)
 
 $(TARGET): $(SRC)
-	$(CC) $(CFLAGS) -o $(TARGET) $(INCLUDES) $(SRCS)
+	$(CC) $(CFLAGS) -o $(TARGET) $(INCLUDES) $(SRCS) $(LIBS)
 
 clean:
 	rm -rf $(TARGET)
+
+re:
+	make -s clean
+	make -s all
+
+.PHONY : all clean re
