@@ -1,5 +1,11 @@
-# ctags file
+# ctags files
 tags
 
-# binary file
+# binary files
 http_capture
+
+# swap files
+*.swp
+
+# memory log files
+mem.log

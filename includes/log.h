@@ -1,50 +1,46 @@
 /**
-@file cfg_parse.h
+@file log.h
 @author 남태일(taeil.nam@monitorapp.com)
-@date 2025-07-15
-@brief conf 파일 파싱을 위한 헤더파일
+@date 2025-07-17
+@brief log 관련 헤더파일
 */
 
-#ifndef CFG_PARSE_H
-#define CFG_PARSE_H
+#ifndef LOG_H 
+#define LOG_H
+
+#include <stdio.h>
+#include "cfg.h"
 
 /*
 ********************************************************************************
-* CONSTANTS
+* CONSTANTS 
 ********************************************************************************
 */
-
-#define CFG_FILE_PATH "/tmp/conf/conf" /**< conf 파일 경로 */
-#define CFG_PARSE_TEST_PATH "/tmp/conf/test" // test code (삭제 필요)
-#define MAX_PARSE_LINE 1024 /**< 파싱 가능한 conf 파일의 최대 라인 수 */
+#define INFO "INFOMATION"
+#define WARN "WARNING"
+#define ERR "ERROR"
 
 /*
 ********************************************************************************
-* DATA TYPES
+* MACROS
 ********************************************************************************
 */
-/**
-@brief cfg_entry 구조체 
-conf 파일 각 라인의 key, value 값을 저장하는 구조체
-*/
-typedef struct cfg_entry {
-	const char *key; /**< line의 key 값 */
-	const char *value; /**< line의 value 값 */
-} cfg_entry_t;
-
+#define LOG(level, fmt, ...)  log_write(level, __func__, fmt, ##__VA_ARGS__)
 
 /*
 ********************************************************************************
 * EXTERNALS 
 ********************************************************************************
 */
-extern int g_cfg_entry_cnts; /**< 파싱 완료된 conf 파일의 entry 개수 */
+extern FILE *g_log_file; /**< log 파일 전역 변수 */
 
 /*
 ********************************************************************************
 * PROTOTYPES
 ********************************************************************************
 */
-void cfg_parse(cfg_entry_t *cfg_entries);
+void log_file_open(void);
+void log_write(const char *level, const char *func, const char *fmt, ...);
+void log_file_close(void);
 
 #endif

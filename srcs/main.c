@@ -3,15 +3,6 @@
 @author 남태일(taeil.nam@monitorapp.com)
 @date 2025-07-15
 @brief http_capture 프로그램의 시작
-
-main 함수부터 프로그램 시작.
-프로세스를 데몬 프로세스로 변경.
-conf 파일 파싱.
-log 파일 생성.
-dump 파일 생성.
-패킷 캡처 수행.
-RESET 패킷 전송.
-종료.
 */
 
 /**
@@ -31,39 +22,90 @@ RESET 패킷 전송.
 libpcap 라이브러리
 */
 
+#include <stdio.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <signal.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
-#include "cfg_parse.h"
+#include <syslog.h>
+#include "cfg.h"
+#include "log.h"
+#include "dump.h"
+#include "pkt_capture.h"
 
+/*
+********************************************************************************
+* PROTOTYPES
+********************************************************************************
+*/
+static void init(void);
+static void run(void);
+static void cleanup(void);
 static void process_demonize(void);
 
 /**
 @brief main 함수
-프로그램 시작 코드
+
+프로그램의 시작 코드
 
 @param void
-@return 성공 여부
+@return 성공시 0 반환, 오류 발생시 1 반환
 */
 int main(void)
 {
-	cfg_entry_t cfg_entries[MAX_PARSE_LINE];
-
-	process_demonize();
-	cfg_parse(cfg_entries);
-
-	while (true){
-
-	}
+	init();
+	run();
+	cleanup();
 
 	return 0;
 }
 
+static void init(void)
+{
+	/* 데몬 프로세스로 변환 */
+	process_demonize();
+
+	/* syslog 시작 */
+	openlog(NULL, LOG_PID | LOG_NDELAY, LOG_DAEMON);
+	syslog(LOG_INFO, "daemon started");
+
+	/* conf 파일 파싱 */
+	cfg_parse();
+
+	/* log 파일 생성 */
+	log_file_open();
+
+	/* dump 파일 생성 */
+	dump_file_open();
+}
+
+static void run(void)
+{
+	// ===test code start===
+	LOG(INFO, "===Started test code.===");
+
+	/* cfg_entries 출력 */
+	cfg_print();
+
+	LOG(INFO, "===Finished test code.===");
+	// ===test code end===
+
+	pkt_capture();
+}
+
+static void cleanup(void)
+{
+	closelog(); // close syslog
+	log_file_close();
+	dump_file_close();
+	cfg_free();
+}
+
 /**
-@brief process_demonize 함수
+@brief process_demonize 정적 함수
+
 현재 프로세스를 데몬 프로세스로 변환해주는 함수
 
 @param void
@@ -75,14 +117,14 @@ static void process_demonize(void)
 
 	/* 백그라운드로 실행 */
 	pid = fork();
-	if (pid < 0){
+	if (pid < 0) {
 		exit(EXIT_FAILURE);
-	} else if (pid > 0){
+	} else if (pid > 0) {
 		exit(EXIT_SUCCESS);
 	}
 
 	/* 터미널과 분리 */
-	if (setsid() < 0){
+	if (setsid() < 0) {
 		exit(EXIT_FAILURE);
 	}
 
@@ -92,9 +134,9 @@ static void process_demonize(void)
 
 	/* 터미널 분리 보장 */
 	pid = fork();
-	if (pid < 0){
+	if (pid < 0) {
 		exit(EXIT_FAILURE);
-	} else if (pid > 0){
+	} else if (pid > 0) {
 		exit(EXIT_SUCCESS);
 	}
 
@@ -105,7 +147,7 @@ static void process_demonize(void)
 	chdir("/");
 
 	/* 모든 fd close */
-	for (long fd = sysconf(_SC_OPEN_MAX); fd >= 0; fd--){
+	for (long fd = sysconf(_SC_OPEN_MAX); fd >= 0; fd--) {
 		close(fd);
 	}
 }
