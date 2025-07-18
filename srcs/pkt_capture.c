@@ -21,7 +21,7 @@
 * VARIABLES
 ********************************************************************************
 */
-static char *net_if; /**< 패킷 캡처할 네트워크 인터페이스 */
+static char *net_if; /**< 패킷을 캡처할 네트워크 인터페이스 */
 static char err_buf[PCAP_ERRBUF_SIZE]; /**< PCAP 관련 에러 메시지 buffer */
 
 /*
@@ -40,10 +40,12 @@ static char err_buf[PCAP_ERRBUF_SIZE]; /**< PCAP 관련 에러 메시지 buffer 
 */
 void pkt_capture(void)
 {
+	//pkt_net_if_set();
 	/* test code start */
 	(void)net_if; // dump code
 	(void)err_buf; // dump code
-	LOG(INFO, "PCAP_ERRBUF_SIZE=%dbytes.", PCAP_ERRBUF_SIZE);
+	LOG(INFO, "PCAP_ERRBUF_SIZE = %dbytes.", PCAP_ERRBUF_SIZE);
+	LOG(INFO, "BUFSIZ = %dbytes.", BUFSIZ);
 
 	/* 3초마다 conf 파일 수정 여부 검사 및 재 파싱 예제 코드 */
 	/*
@@ -60,3 +62,9 @@ void pkt_capture(void)
 	*/
 	/* test code end */
 }
+/*
+static void pkt_net_if_set(void)
+{
+	//TODO
+}
+*/

@@ -16,16 +16,18 @@
 ********************************************************************************
 */
 #define CFG_FILE_PATH "/tmp/http_capture/conf" /**< conf 파일 경로 */
+#define CFG_LOG_FILE_PATH "/tmp/http_capture/log" /**< log 파일 경로 */
+#define CFG_DUMP_FILE_PATH "/tmp/http_capture/dump" /**< dump 파일 경로 */
 #define MAX_CFG_LINE 1024 /**< conf 파일의 최대 라인 수 */
 #define MAX_CFG_LEN 1024 /**< conf 파일 각 라인의 최대 길이 */
 
-/* 필수 설정 KEY 값 매크로 */
+/* 필수 설정 KEY 값 */
 #define CFG_NET_IF_NAME "net_if_name"
 #define CFG_PKT_CNTS "pkt_cnts"
 #define CFG_TARGET_IP "target_ip"
 #define CFG_TARGET_PORT "target_port"
-#define CFG_LOG_FILE_PATH "log_file_path"
-#define CFG_DUMP_FILE_PATH "dump_file_path"
+#define CFG_LOG_FILE "log_file"
+#define CFG_DUMP_FILE "dump_file"
 
 /*
 ********************************************************************************
@@ -34,6 +36,8 @@
 */
 void cfg_parse(void);
 bool cfg_file_is_modified(void);
+bool cfg_log_is_used(void);
+bool cfg_dump_is_used(void);
 const char *cfg_val_find(const char *key);
 void cfg_print(void);
 void cfg_free(void);

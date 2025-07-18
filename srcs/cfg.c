@@ -37,12 +37,16 @@ typedef struct cfg_entry {
 static cfg_entry_t cfg_entries[MAX_CFG_LINE]; /**< conf 파일 라인의 배열 */
 static int cfg_entry_cnts; /**< 파싱된 라인 개수 */
 static time_t cfg_last_mtime; /**< conf 파일 마지막 수정 시간 */
+static bool log_used; /**< log 파일 사용 유무 */
+static bool dump_used; /**< dump 파일 사용 유무 */
 
 /*
 ********************************************************************************
 * PROTOTYPES
 ********************************************************************************
 */
+static void cfg_required_verify(void);
+static void cfg_info_save(void);
 static void cfg_last_mtime_update(void);
 static void cfg_invalid_err(int);
 
@@ -67,7 +71,7 @@ void cfg_parse(void)
 	int line_cnts = 0;
 
 	/* conf 파일 열기 */
-	syslog(LOG_INFO, "===Started parsing configuration file.===");
+	syslog(LOG_INFO, "===STARTED PARSING CONFIGURATION FILE===");
 	cfg_file = fopen(CFG_FILE_PATH, "r");
 	if (!cfg_file) {
 		syslog(LOG_ERR, "Can't open configuration file %s.", CFG_FILE_PATH);
@@ -138,6 +142,14 @@ void cfg_parse(void)
 
 	/* conf 파일 close */
 	fclose(cfg_file);
+
+	syslog(LOG_INFO, "===FINISHED PARSING CONFIGURATION FILE===");
+
+	/* 필수 설정 검사 */
+	cfg_required_verify();
+
+	/* 설정 관련 정보 저장 */
+	cfg_info_save();
 }
 
 /**
@@ -161,6 +173,31 @@ bool cfg_file_is_modified(void)
 	return true;
 }
 
+/**
+@brief cfg_log_is_used 함수
+
+log 파일 사용 유무 반환
+
+@param void
+@return bool log 파일 사용 중인 경우 true, 아닌 경우 false 반환 
+*/
+bool cfg_log_is_used(void)
+{
+	return log_used;
+}
+
+/**
+@brief cfg_dump_is_used 함수
+
+dump 파일 사용 유무 반환
+
+@param void
+@return bool dump 파일 사용 중인 경우 true, 아닌 경우 false 반환 
+*/
+bool cfg_dump_is_used(void)
+{
+	return dump_used;
+}
 
 /**
 @brief cfg_val_find 함수
@@ -198,12 +235,14 @@ const char *cfg_val_find(const char *key)
 void cfg_print(void)
 {
 	LOG(INFO, "=== STARTED PRINT CONF FILE ===");
+
 	for (int idx = 0; idx < cfg_entry_cnts; idx++) {
 		LOG(INFO, "KEY = %s, VALUE = %s",
 				cfg_entries[idx].key,
 				cfg_entries[idx].value);
 	}
 	LOG(INFO, "cfg_last_mtime = %ld", cfg_last_mtime);
+
 	LOG(INFO, "=== FINISED PRINT CONF FILE ===");
 }
 
@@ -220,9 +259,75 @@ void cfg_free(void)
 	for (int idx = 0; idx < cfg_entry_cnts; idx++) {
 		free((void *)cfg_entries[idx].key);
 		free((void *)cfg_entries[idx].value);
+		cfg_entries[idx].key = NULL;
+		cfg_entries[idx].value = NULL;
 	}
 }
 
+/**
+@brief cfg_required_verify 정적 함수
+
+conf 파일의 필수 설정 포함 여부 검사
+필수 설정 없는 경우 프로그램 종료
+
+@param void
+@return void
+*/
+static void cfg_required_verify(void)
+{
+	syslog(LOG_INFO, "===STARTED VERIFYING CONFIGURATION FILE===");
+
+	if (!cfg_val_find(CFG_NET_IF_NAME)) {
+		syslog(LOG_ERR, "Configuration \"%s\" is required.", CFG_NET_IF_NAME);
+		exit(EXIT_FAILURE);
+	} else if (!cfg_val_find(CFG_PKT_CNTS)) {
+		syslog(LOG_ERR, "Configuration \"%s\" is required.", CFG_PKT_CNTS);
+		exit(EXIT_FAILURE);
+	} else if (!cfg_val_find(CFG_TARGET_IP)) {
+		syslog(LOG_ERR, "Configuration \"%s\" is required.", CFG_TARGET_IP);
+		exit(EXIT_FAILURE);
+	} else if (!cfg_val_find(CFG_TARGET_PORT)) {
+		syslog(LOG_ERR, "Configuration \"%s\" is required.", CFG_TARGET_PORT);
+		exit(EXIT_FAILURE);
+	} else if (!cfg_val_find(CFG_LOG_FILE)) {
+		syslog(LOG_ERR, "Configuration \"%s\" is required.", CFG_LOG_FILE);
+		exit(EXIT_FAILURE);
+	} else if (!cfg_val_find(CFG_DUMP_FILE)) {
+		syslog(LOG_ERR, "Configuration \"%s\" is required.", CFG_DUMP_FILE);
+		exit(EXIT_FAILURE);
+	} 
+
+	syslog(LOG_INFO, "===FINISHED VERIFYING CONFIGURATION FILE===");
+}
+
+/**
+@brief cfg_info_save 정적 함수
+
+설정 관련 정보 저장
+
+@param void
+@return void
+*/
+static void cfg_info_save(void)
+{
+	syslog(LOG_INFO, "===STARTED SAVING CONFIGURATION INFO===");
+
+	/* log 파일 사용 유무 저장 */
+	if (strcmp(cfg_val_find(CFG_LOG_FILE), "1") == 0) {
+		log_used = true;
+	} else {
+		log_used = false;
+	}
+
+	/* dump 파일 사용 유무 저장 */
+	if (strcmp(cfg_val_find(CFG_DUMP_FILE), "1") == 0) {
+		dump_used = true;
+	} else {
+		log_used = false;
+	}
+
+	syslog(LOG_INFO, "===FINISHED SAVING CONFIGURATION INFO===");
+}
 /**
 @brief cfg_last_mtime_update 정적 함수
 

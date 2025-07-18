@@ -16,7 +16,7 @@
 * CONSTANTS 
 ********************************************************************************
 */
-#define INFO "INFOMATION"
+#define INFO "INFO"
 #define WARN "WARNING"
 #define ERR "ERROR"
 
@@ -25,14 +25,8 @@
 * MACROS
 ********************************************************************************
 */
-#define LOG(level, fmt, ...)  log_write(level, __func__, fmt, ##__VA_ARGS__)
-
-/*
-********************************************************************************
-* EXTERNALS 
-********************************************************************************
-*/
-extern FILE *g_log_file; /**< log 파일 전역 변수 */
+#define LOG(level, fmt, ...) \
+	log_wr(level, __FILE__, __LINE__, fmt, ##__VA_ARGS__)
 
 /*
 ********************************************************************************
@@ -40,7 +34,8 @@ extern FILE *g_log_file; /**< log 파일 전역 변수 */
 ********************************************************************************
 */
 void log_file_open(void);
-void log_write(const char *level, const char *func, const char *fmt, ...);
+void log_wr(const char *level, const char *file,
+		int line, const char *fmt, ...);
 void log_file_close(void);
 
 #endif

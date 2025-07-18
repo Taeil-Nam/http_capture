@@ -62,6 +62,14 @@ int main(void)
 	return 0;
 }
 
+/**
+@brief init 정적 함수
+
+프로그램 초기 설정
+
+@param void
+@return void
+*/
 static void init(void)
 {
 	/* 데몬 프로세스로 변환 */
@@ -69,7 +77,7 @@ static void init(void)
 
 	/* syslog 시작 */
 	openlog(NULL, LOG_PID | LOG_NDELAY, LOG_DAEMON);
-	syslog(LOG_INFO, "daemon started");
+	syslog(LOG_INFO, "daemon started.");
 
 	/* conf 파일 파싱 */
 	cfg_parse();
@@ -81,23 +89,32 @@ static void init(void)
 	dump_file_open();
 }
 
+/**
+@brief run 정적 함수
+
+프로그램 main 로직
+
+@param void
+@return void
+*/
 static void run(void)
 {
-	// ===test code start===
-	LOG(INFO, "===Started test code.===");
-
-	/* cfg_entries 출력 */
-	cfg_print();
-
-	LOG(INFO, "===Finished test code.===");
-	// ===test code end===
-
+	syslog(LOG_INFO, "===STARTED PACKET CAPTURE===");
+	LOG(INFO, "===STARTED PACKET CAPTURE===");
 	pkt_capture();
 }
 
+/**
+@brief cleanup 정적 함수
+
+프로그램 종료 전, 사용된 자원 반납
+
+@param void
+@return void
+*/
 static void cleanup(void)
 {
-	closelog(); // close syslog
+	closelog(); // syslog 종료
 	log_file_close();
 	dump_file_close();
 	cfg_free();
@@ -106,7 +123,7 @@ static void cleanup(void)
 /**
 @brief process_demonize 정적 함수
 
-현재 프로세스를 데몬 프로세스로 변환해주는 함수
+현재 프로세스를 데몬 프로세스로 변환
 
 @param void
 @return void
