@@ -71,7 +71,7 @@ void cfg_parse(void)
 	int line_cnts = 0;
 
 	/* conf 파일 열기 */
-	syslog(LOG_INFO, "===STARTED PARSING CONFIGURATION FILE===");
+	syslog(LOG_INFO, "Parsing configuration file...[START]");
 	cfg_file = fopen(CFG_FILE_PATH, "r");
 	if (!cfg_file) {
 		syslog(LOG_ERR, "Can't open configuration file %s.", CFG_FILE_PATH);
@@ -143,7 +143,7 @@ void cfg_parse(void)
 	/* conf 파일 close */
 	fclose(cfg_file);
 
-	syslog(LOG_INFO, "===FINISHED PARSING CONFIGURATION FILE===");
+	syslog(LOG_INFO, "Parsing configuration file...[DONE]");
 
 	/* 필수 설정 검사 */
 	cfg_required_verify();
@@ -275,7 +275,7 @@ conf 파일의 필수 설정 포함 여부 검사
 */
 static void cfg_required_verify(void)
 {
-	syslog(LOG_INFO, "===STARTED VERIFYING CONFIGURATION FILE===");
+	syslog(LOG_INFO, "Verifying configuration file...[START]");
 
 	if (!cfg_val_find(CFG_NET_IF_NAME)) {
 		syslog(LOG_ERR, "Configuration \"%s\" is required.", CFG_NET_IF_NAME);
@@ -297,7 +297,7 @@ static void cfg_required_verify(void)
 		exit(EXIT_FAILURE);
 	} 
 
-	syslog(LOG_INFO, "===FINISHED VERIFYING CONFIGURATION FILE===");
+	syslog(LOG_INFO, "Verifying configuration file...[DONE]");
 }
 
 /**
@@ -310,7 +310,7 @@ static void cfg_required_verify(void)
 */
 static void cfg_info_save(void)
 {
-	syslog(LOG_INFO, "===STARTED SAVING CONFIGURATION INFO===");
+	syslog(LOG_INFO, "Saving configuration info...[START]");
 
 	/* log 파일 사용 유무 저장 */
 	if (strcmp(cfg_val_find(CFG_LOG_FILE), "1") == 0) {
@@ -326,7 +326,7 @@ static void cfg_info_save(void)
 		log_used = false;
 	}
 
-	syslog(LOG_INFO, "===FINISHED SAVING CONFIGURATION INFO===");
+	syslog(LOG_INFO, "Saving configuration info...[DONE]");
 }
 /**
 @brief cfg_last_mtime_update 정적 함수

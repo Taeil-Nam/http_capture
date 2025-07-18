@@ -32,7 +32,6 @@ libpcap 라이브러리
 #include <syslog.h>
 #include "cfg.h"
 #include "log.h"
-#include "dump.h"
 #include "pkt_capture.h"
 
 /*
@@ -82,11 +81,8 @@ static void init(void)
 	/* conf 파일 파싱 */
 	cfg_parse();
 
-	/* log 파일 생성 */
-	log_file_open();
-
-	/* dump 파일 생성 */
-	dump_file_open();
+	/* 패킷 캡처 관련 초기 설정 */
+	pkt_capture_setup();
 }
 
 /**
@@ -99,9 +95,7 @@ static void init(void)
 */
 static void run(void)
 {
-	syslog(LOG_INFO, "===STARTED PACKET CAPTURE===");
-	LOG(INFO, "===STARTED PACKET CAPTURE===");
-	pkt_capture();
+	// TODO: 패킷 캡처 로직 + 10초마다 conf 재파싱 로직
 }
 
 /**
@@ -116,7 +110,6 @@ static void cleanup(void)
 {
 	closelog(); // syslog 종료
 	log_file_close();
-	dump_file_close();
 	cfg_free();
 }
 

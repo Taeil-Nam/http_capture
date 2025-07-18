@@ -22,6 +22,6 @@
 * PROTOTYPES
 ********************************************************************************
 */
-void pkt_capture(void);
+void pkt_capture_setup(void);
 
 #endif
