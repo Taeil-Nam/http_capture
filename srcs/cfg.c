@@ -5,8 +5,11 @@
 @brief conf 파일 관련 코드 
 */
 
+#include <arpa/inet.h>
 #include <ctype.h>
+#include <errno.h>
 #include <fcntl.h>
+#include <ifaddrs.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -18,6 +21,7 @@
 #include <unistd.h>
 #include "cfg.h"
 #include "log.h"
+#include "pkt_capture.h"
 
 /*
 ********************************************************************************
@@ -41,6 +45,7 @@ static int cfg_entry_cnts; /**< 파싱된 설정 개수 */
 static time_t cfg_last_mtime; /**< conf 파일 마지막 수정 시간 */
 static bool log_used; /**< log 파일 사용 유무 */
 static bool dump_used; /**< dump 파일 사용 유무 */
+static bool sni_rst_used; /**< sni reset 패킷 전송 사용 유무 */
 
 /*
 ********************************************************************************
@@ -50,7 +55,7 @@ static bool dump_used; /**< dump 파일 사용 유무 */
 static int cfg_parse(void);
 static int cfg_verify(void);
 static int cfg_key_verify(void);
-static int cfg_pkt_filter_verify(void);
+static int cfg_val_verify(void);
 static void cfg_info_save(void);
 static void cfg_last_mtime_update(void);
 static void cfg_invalid_err(int);
@@ -125,7 +130,7 @@ bool cfg_file_is_modified(void)
 log 파일 사용 유무 반환
 
 @param void
-@return bool log 파일 사용 중인 경우 true, 아닌 경우 false 반환 
+@return bool 사용 중인 경우 true, 아닌 경우 false 반환
 */
 bool cfg_log_is_used(void)
 {
@@ -138,11 +143,24 @@ bool cfg_log_is_used(void)
 dump 파일 사용 유무 반환
 
 @param void
-@return bool dump 파일 사용 중인 경우 true, 아닌 경우 false 반환 
+@return bool 사용 중인 경우 true, 아닌 경우 false 반환
 */
 bool cfg_dump_is_used(void)
 {
 	return dump_used;
+}
+
+/**
+@brief cfg_sni_rst_is_used 함수
+
+sni로 reset 패킷 전송 사용 유무 반환
+
+@param void
+@return bool 사용 중인 경우 true, 아닌 경우 false 반환
+*/
+bool cfg_sni_rst_is_used(void)
+{
+	return sni_rst_used;
 }
 
 /**
@@ -238,7 +256,7 @@ static int cfg_parse(void)
 	syslog(LOG_INFO, "Parsing configuration file...[START]");
 	cfg_file = fopen(CFG_FILE_PATH, "r");
 	if (!cfg_file) {
-		syslog(LOG_ERR, "Can't open configuration file %s.", CFG_FILE_PATH);
+		syslog(LOG_ERR, "Can't open configuration file(%s).", CFG_FILE_PATH);
 		return -1;
 	}
 
@@ -336,7 +354,7 @@ static int cfg_verify(void)
 	syslog(LOG_INFO, "Verifying configuration file...[START]");
 
 	if (cfg_key_verify() == -1 ||
-		cfg_pkt_filter_verify() == -1) {
+		cfg_val_verify() == -1) {
 		return -1;
 	}
 
@@ -372,21 +390,77 @@ static int cfg_key_verify(void)
 	} else if (!cfg_val_find(CFG_DUMP_FILE)) {
 		syslog(LOG_ERR, "Configuration \"%s\" is required.", CFG_DUMP_FILE);
 		return -1;
-	} 
+	} else if (!cfg_val_find(CFG_SNI_RST)) {
+		syslog(LOG_ERR, "Configuration \"%s\" is required.", CFG_SNI_RST);
+		return -1;
+	}
+
 	return 0;
 }
 
 /**
-@brief cfg_pkt_filter_verify 정적 함수
+@brief cfg_val_verify 정적 함수
 
-conf 파일로부터 파싱된 패킷 필터링 관련 정보 검사 
+conf 파일로부터 파싱된 value 값 검사 
 
 @param void
 @return int 검증 성공시 0 반환, 검증 실패시 -1 반환
 */
-static int cfg_pkt_filter_verify(void)
+static int cfg_val_verify(void)
 {
-	// TODO: pcap 필터 관련 초기화 실패시 -1 반환
+	const char *net_if_name;
+	int pkt_cnts;
+	const char *target_ip;
+	int target_port;
+	bool is_exist = false;
+	struct ifaddrs *ifaddr, *ifa;
+	struct in_addr ip_addr;
+
+
+	/* 시스템의 네트워크 인터페이스 목록 불러오기 */
+	if (getifaddrs(&ifaddr) == -1) {
+	    syslog(LOG_ERR, "%s", strerror(errno));
+		return -1;
+	}
+
+	/* net_if_name과 동일한 이름의 네트워크 인터페이스가 있는지 확인 */
+	net_if_name = cfg_val_find(CFG_NET_IF_NAME);
+	ifa = ifaddr;
+	while (ifa) {
+		if (strcmp(ifa->ifa_name, net_if_name) == 0) {
+			is_exist = true;
+			freeifaddrs(ifaddr);
+			break;
+		}
+		ifa = ifa->ifa_next;
+	}
+	if (is_exist == false) {
+		syslog(LOG_ERR, "There is no network interface(%s).", net_if_name);
+		freeifaddrs(ifaddr);
+		return -1;
+	}
+
+	/* pkt_cnts 값 검사 */
+	pkt_cnts = atoi(cfg_val_find(CFG_PKT_CNTS));
+	if (pkt_cnts < 0 || pkt_cnts > MAX_PKT_CNTS) {
+		syslog(LOG_ERR, "Invalid pkt_cnts(%d).", pkt_cnts);
+		return -1;
+	}
+
+	/* target_ip 값 검사 */
+	target_ip = cfg_val_find(CFG_TARGET_IP);
+	if ((inet_pton(AF_INET, target_ip, &ip_addr) != 1) &&
+		(inet_pton(AF_INET6, target_ip, &ip_addr) != 1)) {
+		syslog(LOG_ERR, "Invalid target_ip(%s).", target_ip);
+		return -1;
+	}
+
+	/* target_port 값 검사 */
+	target_port = atoi(cfg_val_find(CFG_TARGET_PORT));
+	if (target_port < 0 || target_port > 65535) {
+	    syslog(LOG_ERR, "Invalid target_port(%d).", target_port);
+		return -1;
+	}
 
 	return 0;
 }
@@ -414,7 +488,14 @@ static void cfg_info_save(void)
 	if (strcmp(cfg_val_find(CFG_DUMP_FILE), "1") == 0) {
 		dump_used = true;
 	} else {
-		log_used = false;
+		dump_used = false;
+	}
+
+	/* SNI로 RESET 패킷 전송 사용 유무 저장 */
+	if (strcmp(cfg_val_find(CFG_SNI_RST), "1") == 0) {
+		sni_rst_used = true;
+	} else {
+		sni_rst_used = false;
 	}
 
 	syslog(LOG_INFO, "Saving configuration info...[DONE]");

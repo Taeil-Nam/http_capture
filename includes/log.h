@@ -39,3 +39,4 @@ void log_wr(const char *level, const char *file,
 void log_file_close(void);
 
 #endif
+

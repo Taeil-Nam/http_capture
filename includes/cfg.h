@@ -29,6 +29,7 @@
 #define CFG_TARGET_PORT "target_port"
 #define CFG_LOG_FILE "log_file"
 #define CFG_DUMP_FILE "dump_file"
+#define CFG_SNI_RST "sni_rst"
 
 /*
 ********************************************************************************
@@ -39,8 +40,10 @@ void cfg_apply(void);
 bool cfg_file_is_modified(void);
 bool cfg_log_is_used(void);
 bool cfg_dump_is_used(void);
+bool cfg_sni_rst_is_used(void);
 const char *cfg_val_find(const char *key);
 void cfg_print(void);
 void cfg_free(void);
 
 #endif
+

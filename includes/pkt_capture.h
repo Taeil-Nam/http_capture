@@ -13,9 +13,7 @@
 * CONSTANTS
 ********************************************************************************
 */
-//#define CFG_FILE_PATH "/tmp/http_capture/conf" /**< conf 파일 경로 */
-//#define MAX_CFG_LINE 1024 /**< conf 파일의 최대 라인 수 */
-//#define MAX_CFG_LEN 1024 /**< conf 파일 각 라인의 최대 길이 */
+#define MAX_PKT_CNTS 1000000000 /**< 캡처 가능한 최대 패킷 개수 */
 
 /*
 ********************************************************************************
@@ -25,3 +23,4 @@
 void pkt_capture_setup(void);
 
 #endif
+
