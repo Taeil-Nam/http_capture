@@ -1,5 +1,5 @@
 /**
-@file main.c
+@file http_capture.c
 @author 남태일(taeil.nam@monitorapp.com)
 @date 2025-07-15
 @brief http_capture 프로그램의 시작
@@ -8,16 +8,16 @@
 /**
 @mainpage http 패킷 캡처 프로그램
 
-@section intro 소개
+@section intro
 이 프로젝트는 간단한 http 패킷 캡처 프로그램 예제이다.
 
-@section developer 개발자
+@section developer
 남태일(taeil.nam@monitorapp.com)
 
-@section history 역사
+@section history
 2025-07-15: 프로젝트 시작
 
-@section requirment 요구 사항
+@section requirment
 우분투 환경
 libpcap 라이브러리
 */
@@ -28,8 +28,9 @@ libpcap 라이브러리
 #include <signal.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <unistd.h>
 #include <syslog.h>
+#include <time.h>
+#include <unistd.h>
 #include "cfg.h"
 #include "log.h"
 #include "pkt_capture.h"
@@ -78,24 +79,45 @@ static void init(void)
 	openlog(NULL, LOG_PID | LOG_NDELAY, LOG_DAEMON);
 	syslog(LOG_INFO, "daemon started.");
 
-	/* conf 파일 파싱 */
-	cfg_parse();
-
-	/* 패킷 캡처 관련 초기 설정 */
-	pkt_capture_setup();
+	/* conf 설정 적용 */
+	cfg_apply();
 }
 
 /**
 @brief run 정적 함수
 
 프로그램 main 로직
+실시간으로 패킷 캡처
+CFG_INTERVAL 마다 conf 수정 유무 확인 후, 수정된 설정 적용
 
 @param void
 @return void
 */
 static void run(void)
 {
-	// TODO: 패킷 캡처 로직 + 10초마다 conf 재파싱 로직
+	struct timespec start_time, cur_time;
+	int elapsed_time = 0;
+
+	clock_gettime(CLOCK_MONOTONIC, &start_time);
+	while (true) {
+		// TODO: 실시간 패킷 캡처
+		// pcap_dispatch()???
+	
+		clock_gettime(CLOCK_MONOTONIC, &cur_time);
+		elapsed_time = cur_time.tv_sec - start_time.tv_sec;
+		
+		/* CFG_INTERVAL 마다 conf 수정 유무 확인 */
+		if (elapsed_time >= CFG_INTERVAL) {
+			cfg_print(); // test code
+
+			/* conf 파일 수정시 */
+			if (cfg_file_is_modified()) {
+				 cfg_apply();
+			}
+			start_time = cur_time;
+		}
+		usleep(10000);
+	}
 }
 
 /**

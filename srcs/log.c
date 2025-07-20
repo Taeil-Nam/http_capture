@@ -31,18 +31,23 @@ log 파일 생성 실패시 프로그램 종료
 */
 void log_file_open(void)
 {
-	/* log 파일 미사용시 생략 */
+	/* log 파일 미사용시 종료 */
 	if (!cfg_log_is_used()) {
 		return;
 	}
 
-	/* 기존 log 파일이 열려있는 경우 생략 */
+	/* 기존 log 파일이 열려있는 경우 종료 */
 	if (log_file) {
 		return;
 	}
 
 	/* log 파일 생성 */
 	log_file = fopen(CFG_LOG_FILE_PATH, "a");
+
+	/* log 파일 생성 실패시 종료 */
+	if (!log_file) {
+		return;
+	}
 
 	/* 버퍼링 사용 없이 즉시 출력 */
 	setvbuf(log_file, NULL, _IONBF, 0);
@@ -59,7 +64,7 @@ log 파일에 로그를 출력
 입력된 level과 문자열 포맷에 맞게 log를 출력
 날짜, level, 함수명, 문자열 순서로 log를 출력
 자동으로 줄바꿈 지원
-log 파일이 생성되지 않았거나, 미사용 상태인 경우 생략
+log 파일이 생성되지 않았거나, 미사용 상태인 경우 종료
 
 @param level log 레벨
 @param file log를 출력한 파일명
@@ -76,7 +81,7 @@ void log_wr(const char *level, const char *file,
 	char time_buf[32];
 	va_list args;
 
-	/* log 파일이 생성되지 않았거나, 미사용 상태인 경우 생략 */
+	/* log 파일이 생성되지 않았거나, 미사용 상태인 경우 종료 */
 	if (!log_file || !cfg_log_is_used()) {
 		return;
 	}

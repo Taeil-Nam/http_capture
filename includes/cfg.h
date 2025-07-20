@@ -18,8 +18,9 @@
 #define CFG_FILE_PATH "/tmp/http_capture/conf" /**< conf 파일 경로 */
 #define CFG_LOG_FILE_PATH "/tmp/http_capture/log" /**< log 파일 경로 */
 #define CFG_DUMP_FILE_PATH "/tmp/http_capture/dump" /**< dump 파일 경로 */
-#define MAX_CFG_LINE 1024 /**< conf 파일의 최대 라인 수 */
-#define MAX_CFG_LEN 1024 /**< conf 파일 각 라인의 최대 길이 */
+#define MAX_CFG_CNTS 1024 /**< conf 파일의 최대 설정 개수 */
+#define MAX_CFG_LEN 1024 /**< conf 파일 각 설정의 최대 길이 */
+#define CFG_INTERVAL 10 /**< conf 파일 갱신 유무 확인 간격(초) */
 
 /* 필수 설정 KEY 값 */
 #define CFG_NET_IF_NAME "net_if_name"
@@ -34,7 +35,7 @@
 * PROTOTYPES
 ********************************************************************************
 */
-void cfg_parse(void);
+void cfg_apply(void);
 bool cfg_file_is_modified(void);
 bool cfg_log_is_used(void);
 bool cfg_dump_is_used(void);
