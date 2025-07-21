@@ -91,7 +91,7 @@ static void init(void)
 
 프로그램 main 로직
 실시간으로 패킷 캡처
-CFG_INTERVAL 마다 conf 수정 유무 확인 후, 수정된 설정 적용
+CFG_INTERVAL 마다 conf 수정 유무 확인 후, 수정된 설정 적용 후 다시 캡처
 
 @param void
 @return void
@@ -100,8 +100,9 @@ static void run(void)
 {
 	struct timespec start_time, cur_time;
 	int elapsed_time = 0;
+	// int cnt = 0; // leak test code
 
-	syslog(LOG_INFO, "Starting packet capture...[START]");
+	syslog(LOG_INFO, "Packet capture...[START]");
 	clock_gettime(CLOCK_MONOTONIC, &start_time);
 	while (true) {
 		/* 패킷 캡처 */
@@ -115,14 +116,24 @@ static void run(void)
 
 			/* conf 파일 수정시 */
 			if (cfg_file_is_modified()) {
+				/*
+				cnt++; // leak test code
+				if (cnt > 2) // leak test code
+					break; // leak test code
+				*/
+
+				/* 변경된 설정으로 재설정 */
+				syslog(LOG_INFO, "Packet capture...[DONE]");
+				syslog(LOG_INFO, "Contiguration file modified.");
 				cfg_apply();
 				pkt_capture_setup();
+				syslog(LOG_INFO, "Packet capture...[START]");
 			}
 			start_time = cur_time;
 		}
 		usleep(10000);
 	}
-	syslog(LOG_INFO, "Starting packet capture...[DONE]");
+	syslog(LOG_INFO, "Packet capture...[DONE]");
 }
 
 /**
