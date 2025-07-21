@@ -81,6 +81,9 @@ static void init(void)
 
 	/* conf 설정 적용 */
 	cfg_apply();
+
+	/* 패킷 캡처 관련 설정 */
+	pkt_capture_setup();
 }
 
 /**
@@ -98,28 +101,28 @@ static void run(void)
 	struct timespec start_time, cur_time;
 	int elapsed_time = 0;
 
+	syslog(LOG_INFO, "Starting packet capture...[START]");
 	clock_gettime(CLOCK_MONOTONIC, &start_time);
-	int i = 0; // test code
-	while (i < 3) {
-		// TODO: 실시간 패킷 캡처
-		// pcap_dispatch()???
+	while (true) {
+		/* 패킷 캡처 */
+		pkt_capture();
 	
 		clock_gettime(CLOCK_MONOTONIC, &cur_time);
 		elapsed_time = cur_time.tv_sec - start_time.tv_sec;
 		
 		/* CFG_INTERVAL 마다 conf 수정 유무 확인 */
 		if (elapsed_time >= CFG_INTERVAL) {
-			cfg_print(); // test code
-			i++; // test code
 
 			/* conf 파일 수정시 */
 			if (cfg_file_is_modified()) {
 				cfg_apply();
+				pkt_capture_setup();
 			}
 			start_time = cur_time;
 		}
 		usleep(10000);
 	}
+	syslog(LOG_INFO, "Starting packet capture...[DONE]");
 }
 
 /**
@@ -134,7 +137,7 @@ static void cleanup(void)
 {
 	syslog(LOG_INFO, "Cleanup resources...[START]");
 	cfg_free();
-	log_file_close();
+	pkt_capture_free();
 	syslog(LOG_INFO, "Cleanup resources...[DONE]");
 	syslog(LOG_INFO, "daemon terminated.");
 	closelog(); // syslog 종료

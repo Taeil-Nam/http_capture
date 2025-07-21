@@ -41,6 +41,8 @@ void log_file_open(void)
 		return;
 	}
 
+	syslog(LOG_INFO, "Creating log file...[START]");
+
 	/* log 파일 생성 */
 	log_file = fopen(CFG_LOG_FILE_PATH, "a");
 
@@ -53,8 +55,9 @@ void log_file_open(void)
 	setvbuf(log_file, NULL, _IONBF, 0);
 
 	/* log 파일 생성 알림 */
-	syslog(LOG_INFO, "===LOG FILE CREATED===");
 	fputs("\n\n===NEW LOGGING STARTED===\n", log_file);
+
+	syslog(LOG_INFO, "Creating log file...[DONE]");
 }
 
 /**
