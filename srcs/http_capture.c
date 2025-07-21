@@ -99,7 +99,8 @@ static void run(void)
 	int elapsed_time = 0;
 
 	clock_gettime(CLOCK_MONOTONIC, &start_time);
-	while (true) {
+	int i = 0; // test code
+	while (i < 3) {
 		// TODO: 실시간 패킷 캡처
 		// pcap_dispatch()???
 	
@@ -109,10 +110,11 @@ static void run(void)
 		/* CFG_INTERVAL 마다 conf 수정 유무 확인 */
 		if (elapsed_time >= CFG_INTERVAL) {
 			cfg_print(); // test code
+			i++; // test code
 
 			/* conf 파일 수정시 */
 			if (cfg_file_is_modified()) {
-				 cfg_apply();
+				cfg_apply();
 			}
 			start_time = cur_time;
 		}
@@ -130,9 +132,12 @@ static void run(void)
 */
 static void cleanup(void)
 {
-	closelog(); // syslog 종료
-	log_file_close();
+	syslog(LOG_INFO, "Cleanup resources...[START]");
 	cfg_free();
+	log_file_close();
+	syslog(LOG_INFO, "Cleanup resources...[DONE]");
+	syslog(LOG_INFO, "daemon terminated.");
+	closelog(); // syslog 종료
 }
 
 /**

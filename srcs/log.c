@@ -16,7 +16,7 @@
 * DATA TYPES
 ********************************************************************************
 */
-static FILE *log_file = NULL;
+static FILE *log_file;
 
 /**
 @brief log_file_open 함수
@@ -108,7 +108,9 @@ log 파일 close
 */
 void log_file_close(void)
 {
-	fclose(log_file);
-	log_file = NULL;
+	if (log_file) {
+		fclose(log_file);
+		log_file = NULL;
+	}
 }
 

@@ -40,6 +40,7 @@ typedef struct cfg_entry {
 * VARIABLES
 ********************************************************************************
 */
+FILE *cfg_file;
 static cfg_entry_t cfg_entries[MAX_CFG_CNTS]; /**< conf 파일 설정의 배열 */
 static int cfg_entry_cnts; /**< 파싱된 설정 개수 */
 static time_t cfg_last_mtime; /**< conf 파일 마지막 수정 시간 */
@@ -79,9 +80,12 @@ void cfg_apply(void)
 	clock_gettime(CLOCK_MONOTONIC, &start_time);
 
 	while (true) {
+
+		/* 이전 설정 정보 삭제 */
+		cfg_free();
 		
 		/* conf 파일 파싱, 검증 완료시 */
-		if (cfg_parse() != -1 && cfg_verify() != -1) {
+		if (cfg_parse() == 0 && cfg_verify() == 0) {
 			break;
 		}
 
@@ -218,6 +222,7 @@ void cfg_print(void)
 /**
 @brief cfg_free 함수
 
+cfg_file close
 모든 설정 목록(cfg_entry_t)의 메모리 반납
 
 @param void
@@ -225,6 +230,10 @@ void cfg_print(void)
 */
 void cfg_free(void)
 {
+	if (cfg_file) {
+		fclose(cfg_file);
+		cfg_file = NULL;
+	}
 	for (int idx = 0; idx < cfg_entry_cnts; idx++) {
 		free((void *)cfg_entries[idx].key);
 		free((void *)cfg_entries[idx].value);
@@ -236,8 +245,9 @@ void cfg_free(void)
 /**
 @brief cfg_parse 정적 함수
 
-conf 파일 파싱 후, cfg_entries에 저장
+conf 파일 파싱 후, 각 설정을 cfg_entries에 저장
 각 설정의 key, value 값을 cfg_entries[idx]에 순서대로 저장
+key, value는 동적 할당
 시간복잡도 = O(m * n)
 m = conf 파일의 설정 개수
 n = 각 설정의 길이 
@@ -248,7 +258,6 @@ n = 각 설정의 길이
 */
 static int cfg_parse(void)
 {
-	FILE *cfg_file = NULL;
 	char line[MAX_CFG_LEN];
 	int line_cnts = 0;
 
@@ -333,9 +342,6 @@ static int cfg_parse(void)
 
 	/* 파싱된 설정 개수 저장 */
 	cfg_entry_cnts = line_cnts;
-
-	/* conf 파일 close */
-	fclose(cfg_file);
 
 	syslog(LOG_INFO, "Parsing configuration file...[DONE]");
 	return 0;
