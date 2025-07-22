@@ -15,9 +15,9 @@
 * CONSTANTS
 ********************************************************************************
 */
-#define CFG_FILE_PATH "/tmp/http_capture/conf" /**< conf 파일 경로 */
-#define CFG_LOG_FILE_PATH "/tmp/http_capture/log" /**< log 파일 경로 */
-#define CFG_DUMP_FILE_PATH "/tmp/http_capture/dump" /**< dump 파일 경로 */
+#define CFG_FILE_PATH "/http_capture/conf" /**< conf 파일 경로 */
+#define CFG_LOG_FILE_PATH "/http_capture/log" /**< log 파일 경로 */
+#define CFG_DUMP_FILE_PATH "/http_capture/dump.pcap" /**< dump 파일 경로 */
 #define MAX_CFG_CNTS 1024 /**< conf 파일의 최대 설정 개수 */
 #define MAX_CFG_LEN 1024 /**< conf 파일 각 설정의 최대 길이 */
 #define CFG_INTERVAL 10 /**< conf 파일 갱신 유무 확인 간격(초) */

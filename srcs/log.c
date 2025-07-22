@@ -93,7 +93,7 @@ void log_wr(const char *level, const char *file,
 	strftime(time_buf, sizeof(time_buf), "%Y-%m-%d %H:%M:%S", t);
 	
 	/* log 출력 */
-	fprintf(log_file, "[%s][%s] [%s:%d] ",
+	fprintf(log_file, "[%s][%s][%s:%d] ",
 			time_buf, level, file, line);
 	va_start(args, fmt);
 	vfprintf(log_file, fmt, args);

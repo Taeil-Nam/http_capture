@@ -2,10 +2,15 @@
 tags
 
 # binary files
-http_capture
+https_capture
 
 # swap files
 *.swp
 
 # memory log files
 mem.log
+
+# cert, key files
+cert.pem
+key.pem
+

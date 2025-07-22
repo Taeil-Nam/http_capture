@@ -106,7 +106,9 @@ static void run(void)
 	clock_gettime(CLOCK_MONOTONIC, &start_time);
 	while (true) {
 		/* 패킷 캡처 */
-		pkt_capture();
+		if (pkt_capture() == -1) {
+			break;
+		}
 	
 		clock_gettime(CLOCK_MONOTONIC, &cur_time);
 		elapsed_time = cur_time.tv_sec - start_time.tv_sec;

@@ -29,8 +29,7 @@ struct eth_hdr {
 } __attribute__((packed));
 
 struct ip_hdr {
-	unsigned char version:4,
-				  ihl:4;
+	unsigned char ver_ihl;
 	unsigned char tos;
 	unsigned short tot_len;
 	unsigned short id;
@@ -47,16 +46,8 @@ struct tcp_hdr {
 	unsigned short dst_port;
 	unsigned int seq_num;
 	unsigned int ack_num;
-	unsigned short data_offset:4,
-				   reserved:4,
-				   cwr:1,
-				   ece:1,
-				   urg:1,
-				   ack:1,
-				   psh:1,
-				   rst:1,
-				   syn:1,
-				   fin:1;
+	unsigned char off_rsv;
+	unsigned char flags;
 	unsigned short window;
 	unsigned short checksum;
 	unsigned short urg_ptr;
@@ -68,7 +59,7 @@ struct tcp_hdr {
 ********************************************************************************
 */
 void pkt_capture_setup(void);
-void pkt_capture(void);
+int pkt_capture(void);
 void pkt_capture_free(void);
 
 #endif

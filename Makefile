@@ -14,7 +14,7 @@ SRCS		=	$(wildcard srcs/*.c)
 LIBS		=	-lpcap
 
 # target
-TARGET		=	http_capture
+TARGET		=	https_capture
 
 # build rule
 all: $(TARGET)
