@@ -17,13 +17,10 @@
 #include "cfg.h"
 #include "log.h"
 #include "pkt_capture.h"
+#include "eth.h"
+#include "ip.h"
+#include "tcp.h"
 #include "tls.h"
-
-/*
-********************************************************************************
-* DATA TYPES
-********************************************************************************
-*/
 
 /*
 ********************************************************************************
@@ -43,7 +40,8 @@ static char err_buf[PCAP_ERRBUF_SIZE]; /**< PCAP 관련 에러 메시지 buffer 
 * PROTOTYPES
 ********************************************************************************
 */
-static int pkt_inspect(struct pcap_pkthdr *pkt_hdr, const u_char *pkt_data);
+static int pkt_inspect(pkt_t *pkt);
+static void pkt_info_log(pkt_t *pkt);
 
 /**
 @brief pkt_capture_setup 함수
@@ -118,17 +116,17 @@ void pkt_capture_setup(void)
 */
 int pkt_capture(void)
 {
-	struct pcap_pkthdr *pkt_hdr;
-	const u_char *pkt_data;
+	pkt_t pkt;
 	int retval = 0;
-	int cnts = 0;
+	int pcap_cnts = 0;
 
-	/* pkt_cnts 만큼 패킷 캡처된 경우 */
-	if (cnts >= pkt_cnts) {
+	/* pkt_cnts 설정 값 만큼 패킷 캡처된 경우 */
+	if (pkt_cnts != 0 && pcap_cnts >= pkt_cnts) {
 		return -1;
 	}
 
-	retval = pcap_next_ex(pcap_handle, &pkt_hdr, &pkt_data);
+	/* 패킷 1개 캡처 */
+	retval = pcap_next_ex(pcap_handle, &(pkt.pkt_hdr), &(pkt.pkt_data));
 
 	/* 오류 발생시 */
 	if (retval == PCAP_ERROR) {
@@ -136,13 +134,32 @@ int pkt_capture(void)
 		return -1;
 	}
 
-	/* 설정에 맞는 패킷인지 검사 */
-	// TODO: pkt_inspect 여러 개의 함수로 쪼개기
-	if (pkt_inspect(pkt_hdr, pkt_data) == -1)
+	/* 필터에 맞는 패킷인지 검사 */
+	if (pkt_inspect(&pkt) == -1) {
+		//LOG(INFO, "This captured packet is not a target packet");
 		return 0;
+	}
 
-	// pkt_inspect() 검사 이후 부분 아래에 작성
-	cnts++;
+	/* packet에 대한 dump 생성 */
+	if (cfg_dump_is_used()) {
+		pcap_dump((u_char *)dumper, pkt.pkt_hdr, pkt.pkt_data);
+	}
+
+	/* SNI 찾기 */
+	pkt.tls_sni = tls_sni_get(&pkt);
+
+	/* 패킷 정보 로깅 */
+	pkt_info_log(&pkt);
+
+	/* SNI로 rst 전송 */
+	if (cfg_sni_rst_is_used()) {
+		// TODO: SNI로 rst 전송
+	}
+
+	if (pkt.tls_sni) {
+		free((void *)pkt.tls_sni);
+	}
+	pcap_cnts++;
 
 	return 0;
 }
@@ -173,138 +190,117 @@ void pkt_capture_free(void)
 
 캡처된 패킷의 정보를 검사하여, 원하는 패킷인지 확인
 
-@param void
-@return int 성공시 0 반환, 실패시 1 반환
+@param pkt 캡처된 패킷
+@return int 성공시 0 반환, 실패시 -1 반환
 */
-static int pkt_inspect(struct pcap_pkthdr *pkt_hdr, const u_char *pkt_data)
+static int pkt_inspect(pkt_t *pkt)
 {
-	struct eth_hdr *eth;
-	struct ip_hdr *ip;
-	struct tcp_hdr *tcp;
-	int eth_size = 0;
-	int ip_size = 0;
-	int tcp_size = 0;
+	eth_hdr_t *eth;
+	uint8_t vlan_cnts;
+	ip_hdr_t *ip;
+	tcp_hdr_t *tcp;
 	char src_ip_str[INET_ADDRSTRLEN];
 	char dst_ip_str[INET_ADDRSTRLEN];
 
-	/* ethernet parsing test */
-	eth = (struct eth_hdr *)pkt_data;
-	eth_size = sizeof(struct eth_hdr);
-	/*
-	LOG(INFO,
-		"src_mac = [%02x:%02x:%02x:%02x:%02x:%02x], "
-		"dst_mac = [%02x:%02x:%02x:%02x:%02x:%02x], "
-		"eth_size = %d",
-		eth->dst_mac[0], eth->dst_mac[1], eth->dst_mac[2],
-		eth->dst_mac[3], eth->dst_mac[4], eth->dst_mac[5],
-		eth->src_mac[0], eth->src_mac[1], eth->src_mac[2],
-		eth->src_mac[3], eth->src_mac[4], eth->src_mac[5],
-		eth_size);
-	*/
-	if (eth->type != htons(ETH_P_IP))
-		return -1;
+	/* Ethernet 파싱 */
+	eth = eth_hdr_get(pkt->pkt_data);
 
-	/* ip parsing test */
-	ip = (struct ip_hdr *)(pkt_data + eth_size);
-	unsigned char ihl = ip->ver_ihl & 0x0F;
-	ip_size = (ihl * 4);
+	/* VLAN 포함된 경우 */
+	vlan_cnts = 0;
+	while (eth->type == ETH_P_8021Q) {
+		vlan_cnts++;
+		eth = (eth_hdr_t *)((uint8_t *)eth + VLAN_LEN);
+	}
+	pkt->ip_offset = ETH_HDR_LEN + (VLAN_LEN * vlan_cnts);
+
+	/* IP 파싱 */
+	ip = ip_hdr_get(pkt->pkt_data + pkt->ip_offset);
+	pkt->tcp_offset = pkt->ip_offset + ((ip->ver_ihl & 0x0F) * 4);
 	inet_ntop(AF_INET, &ip->src_ip, src_ip_str, INET_ADDRSTRLEN);
 	inet_ntop(AF_INET, &ip->dst_ip, dst_ip_str, INET_ADDRSTRLEN);
 
-	/* ip 필터링 */
+	/* IP 필터링 */
 	if (strcmp(src_ip_str, target_ip) != 0 &&
-		strcmp(dst_ip_str, target_ip) != 0)
+		strcmp(dst_ip_str, target_ip) != 0) {
 		return -1;
-	/*
-	LOG(INFO,
-		"src_ip = [%s], dst_ip = [%s], protocol = [%hu], ip_size = [%d]",
-		src_ip_str,
-		dst_ip_str,
-		ip->protocol,
-		ip_size);
-	*/
-	if (ip->protocol != IPPROTO_TCP)
+	}
+	if (ip->protocol != IPPROTO_TCP) {
 		return -1;
-
-	/* tcp parsing test */
-	tcp = (struct tcp_hdr *)(pkt_data + eth_size + ip_size);
-
-	/* port 필터링 */
-	if (ntohs(tcp->src_port) != target_port &&
-		ntohs(tcp->dst_port) != target_port)
-		return -1;
-
-	unsigned char offset = tcp->off_rsv >> 4;
-	/*
-	LOG(INFO,
-		"src_port = [%hu], dst_port = [%hu], seq_num = [%u], ack_num = [%u], data_offset = [%hu]",
-		ntohs(tcp->src_port),
-		ntohs(tcp->dst_port),
-		ntohl(tcp->seq_num),
-		ntohl(tcp->ack_num), offset * 4);
-	*/
-	tcp_size = offset * 4;
-
-	/* TLS parsing test */
-	/* 필터링 거친 패킷이므로, 덤프에 저장 및 패킷 카운트 증가 */
-	/* dump 생성 */
-	if (cfg_dump_is_used()) {
-		pcap_dump((u_char *)dumper, pkt_hdr, pkt_data);
 	}
 
-	struct tls_rec *tls;
-	tls = (struct tls_rec *)(pkt_data + eth_size + ip_size + tcp_size);
+	/* TCP 파싱 */
+	tcp = tcp_hdr_get(pkt->pkt_data + pkt->tcp_offset);
+	pkt->tls_rec_offset = pkt->tcp_offset + ((tcp->off_rsv >> 4) * 4);
 
-	/* tls handshake msg */
-	if (tls->type != 0x16)
+	/* Port 번호 필터링 */
+	// TODO: TLS, HTTP만 수신되어야 하는지?
+	// 일단 config의 port로 필터링 중
+	if (ntohs(tcp->src_port) != target_port &&
+		ntohs(tcp->dst_port) != target_port) {
 		return -1;
+	}
 
-	struct tls_hand *tls_hand = (struct tls_hand *)((uint8_t *)tls + sizeof(struct tls_rec));
+	// pkt_info_log()
 
-	/* tls client hello msg */
-	if (tls_hand->type != 0x01)
-		return -1;
+	return 0;
+}
 
-	/* SNI 찾기 */
-	uint8_t *client_hello = (uint8_t *)((uint8_t *)tls_hand + sizeof(struct tls_hand));
-	unsigned int ch_len = 0;
-	ch_len = (tls_hand->len[0] << 16) | (tls_hand->len[1] << 8) | tls_hand->len[0];
-	const char *tls_sni = tls_sni_get(client_hello, ch_len);
+/**
+@brief pkt_info_log 정적 함수
+
+필터링된 패킷의 정보를 log 파일에 저장
+
+@param pkt 캡처된 패킷
+@return void
+*/
+static void pkt_info_log(pkt_t *pkt)
+{
+	eth_hdr_t *eth;
+	ip_hdr_t *ip;
+	tcp_hdr_t *tcp;
+	char src_ip_str[INET_ADDRSTRLEN];
+	char dst_ip_str[INET_ADDRSTRLEN];
+
+	eth = eth_hdr_get(pkt->pkt_data);
+	ip = ip_hdr_get(pkt->pkt_data + pkt->ip_offset);
+	tcp = tcp_hdr_get(pkt->pkt_data + pkt->tcp_offset);
+	inet_ntop(AF_INET, &ip->src_ip, src_ip_str, INET_ADDRSTRLEN);
+	inet_ntop(AF_INET, &ip->dst_ip, dst_ip_str, INET_ADDRSTRLEN);
+
 	LOG(INFO, "===PACKET INFO===[START]");
-	LOG(INFO, "This is TLS Client Hello Message");
 	LOG(INFO,
 		"src_mac = [%02x:%02x:%02x:%02x:%02x:%02x], "
 		"dst_mac = [%02x:%02x:%02x:%02x:%02x:%02x], "
-		"eth_size = %d",
-		eth->dst_mac[0], eth->dst_mac[1], eth->dst_mac[2],
-		eth->dst_mac[3], eth->dst_mac[4], eth->dst_mac[5],
+		"eth_size = [%d]",
 		eth->src_mac[0], eth->src_mac[1], eth->src_mac[2],
 		eth->src_mac[3], eth->src_mac[4], eth->src_mac[5],
-		eth_size);
+		eth->dst_mac[0], eth->dst_mac[1], eth->dst_mac[2],
+		eth->dst_mac[3], eth->dst_mac[4], eth->dst_mac[5],
+		pkt->ip_offset);
 
 	LOG(INFO,
 		"src_ip = [%s], dst_ip = [%s], protocol = [%hu], ip_size = [%d]",
 		src_ip_str,
 		dst_ip_str,
 		ip->protocol,
-		ip_size);
+		(ip->ver_ihl & 0x0F) * 4);
 
 	LOG(INFO,
-		"src_port = [%hu], dst_port = [%hu], seq_num = [%u], ack_num = [%u], data_offset = [%hu]",
+		"src_port = [%hu], dst_port = [%hu], "
+		"seq_num = [%u], ack_num = [%u], data_offset = [%hu]",
 		ntohs(tcp->src_port),
 		ntohs(tcp->dst_port),
 		ntohl(tcp->seq_num),
-		ntohl(tcp->ack_num), offset * 4);
+		ntohl(tcp->ack_num),
+		(tcp->off_rsv >> 4) * 4);
 
-	LOG(INFO,
-		"TLS_SNI = [%s]",
-		tls_sni);
+	// TODO: TLS 정보 추가
+	if (pkt->tls_sni) {
+		LOG(INFO,
+			"!!!!! TLS_SNI = [%s] !!!!!",
+			pkt->tls_sni);
+	}
 
-	/* TODO: sni로 rst 패킷 전송 */
-
-	free((void *)tls_sni); // free test code
-	LOG(INFO, "===PACKET INFO===[DONE]");
-
-	return 0;
+	LOG(INFO, "===PACKET INFO===[DONE]\n");
 }
 

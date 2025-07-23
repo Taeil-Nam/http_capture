@@ -1,0 +1,38 @@
+/**
+@file tcp.h
+@author 남태일(taeil.nam@monitorapp.com)
+@date 2025-07-23
+@brief TCP 로직 관련 헤더 파일
+*/
+
+#ifndef TCP_H
+#define TCP_H
+
+#include <stdint.h>
+
+/*
+********************************************************************************
+* DATA TYPES
+********************************************************************************
+*/
+typedef struct __attribute__((packed)) tcp_hdr {
+	uint16_t src_port;
+	uint16_t dst_port;
+	uint32_t seq_num;
+	uint32_t ack_num;
+	uint8_t off_rsv;
+	uint8_t flags;
+	uint16_t window;
+	uint16_t checksum;
+	uint16_t urg_ptr;
+} tcp_hdr_t;
+
+/*
+********************************************************************************
+* PROTOTYPES
+********************************************************************************
+*/
+tcp_hdr_t *tcp_hdr_get(const uint8_t *pkt_data);
+
+#endif
+

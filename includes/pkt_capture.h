@@ -8,50 +8,34 @@
 #ifndef PKT_CAPTURE_H
 #define PKT_CAPTURE_H
 
+#include <pcap.h>
+
 /*
 ********************************************************************************
 * CONSTANTS
 ********************************************************************************
 */
-#define MAX_PKT_CNTS 1000000000 /**< 캡처 가능한 최대 패킷 개수 */
-#define PCAP_ERR_INTERVAL 10 /**< 오류 발생시 재설정 간격(초) */
-#define MAC_LEN 6 /**< MAC 주소 길이(byte) */
+#define MAX_PKT_CNTS 1000000 /**< 캡처 가능한 최대 패킷 개수 */
+#define PCAP_ERR_INTERVAL 10 /**< 패킷 캡처 설정 오류 발생시 재설정 간격(초) */
 
 /*
 ********************************************************************************
-* DATA TYPES
+* DATATYPES
 ********************************************************************************
 */
-struct eth_hdr {
-	unsigned char dst_mac[MAC_LEN];
-	unsigned char src_mac[MAC_LEN];
-	unsigned short type;
-} __attribute__((packed));
+typedef struct pkt {
+	struct pcap_pkthdr *pkt_hdr;
+	const u_char *pkt_data;
 
-struct ip_hdr {
-	unsigned char ver_ihl;
-	unsigned char tos;
-	unsigned short tot_len;
-	unsigned short id;
-	unsigned short frag_offset;
-	unsigned char ttl;
-	unsigned char protocol;
-	unsigned short checksum;
-	unsigned int src_ip;
-	unsigned int dst_ip;
-} __attribute__((packed));
+	uint16_t ip_offset;
+	uint16_t tcp_offset;
+	uint16_t tls_rec_offset;
+	uint16_t tls_hand_offset;
+	uint16_t tls_ch_offset;
+	uint32_t tls_ext_offset;
 
-struct tcp_hdr {
-	unsigned short src_port;
-	unsigned short dst_port;
-	unsigned int seq_num;
-	unsigned int ack_num;
-	unsigned char off_rsv;
-	unsigned char flags;
-	unsigned short window;
-	unsigned short checksum;
-	unsigned short urg_ptr;
-} __attribute__((packed));
+	const char *tls_sni;
+} pkt_t;
 
 /*
 ********************************************************************************
