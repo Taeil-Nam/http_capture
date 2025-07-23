@@ -88,9 +88,12 @@ void pkt_capture_setup(void)
 
 	/* dump 파일 생성 */
 	if (cfg_dump_is_used()) {
+		syslog(LOG_INFO, "Created dump file...[START]");
 		dumper = pcap_dump_open(pcap_handle, CFG_DUMP_FILE_PATH);
 		if (!dumper) {
 			syslog(LOG_ERR, "%s", pcap_geterr(pcap_handle));
+		} else {
+			syslog(LOG_INFO, "Created dump file...[DONE]");
 		}
 	}
 
@@ -128,10 +131,12 @@ int pkt_capture(void)
 	/* 패킷 1개 캡처 */
 	retval = pcap_next_ex(pcap_handle, &(pkt.pkt_hdr), &(pkt.pkt_data));
 
-	/* 오류 발생시 */
+	/* 오류가 발생했거나, 캡처된 패킷이 없는 경우 */
 	if (retval == PCAP_ERROR) {
 		LOG(ERR, "%s", pcap_geterr(pcap_handle));
 		return -1;
+	} else if (retval == 0) {
+		return 0;
 	}
 
 	/* 필터에 맞는 패킷인지 검사 */
@@ -234,7 +239,7 @@ static int pkt_inspect(pkt_t *pkt)
 
 	/* Port 번호 필터링 */
 	// TODO: TLS, HTTP만 수신되어야 하는지?
-	// 일단 config의 port로 필터링 중
+	// 일단 config의 target_port로 필터링 중
 	if (ntohs(tcp->src_port) != target_port &&
 		ntohs(tcp->dst_port) != target_port) {
 		return -1;

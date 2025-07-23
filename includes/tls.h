@@ -18,6 +18,7 @@
 */
 #define TLS_HANDSHAKE 0x16 /**< TLS 핸드셰이크 메시지 식별 값 */
 #define TLS_HANDSHAKE_CH 0x01 /**< TLS Client Hello 메시지 식별 값 */
+#define TLS_EXT_SN 0 /**< TLS Extension Server Name 식별 값 */
 
 /* Client Hello 메시지의 각 필드 크기 */
 #define CH_VERSION_FIELD 2
@@ -26,6 +27,7 @@
 #define CH_CIP_SUITE_FIELD 2
 #define CH_COMP_FIELD 1
 #define CH_EXTENSION_FIELD 2
+
 
 /*
 ********************************************************************************

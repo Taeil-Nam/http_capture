@@ -16,14 +16,22 @@ LIBS		=	-lpcap
 # target
 TARGET		=	https_capture
 
+# target_debug
+TARGET_DBG	=	https_capture_dbg
+
 # build rule
 all: $(TARGET)
 
-$(TARGET): $(SRC)
+debug: $(TARGET_DBG)
+
+$(TARGET): $(SRCS)
 	$(CC) $(CFLAGS) -o $(TARGET) $(INCLUDES) $(SRCS) $(LIBS)
 
+$(TARGET_DBG): $(SRCS)
+	$(CC) $(CFLAGS) -g -fsanitize=address -o $(TARGET_DBG) $(INCLUDES) $(SRCS) $(LIBS)
+
 clean:
-	rm -rf $(TARGET)
+	rm -rf $(TARGET) $(TARGET_DBG)
 
 re:
 	make -s clean

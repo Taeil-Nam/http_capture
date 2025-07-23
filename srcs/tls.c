@@ -116,14 +116,14 @@ const char *tls_sni_get(pkt_t *pkt)
 		cur_ext = (tls_ext_t *)cur_ch_offset;
 
 		/* server_name extension */
-		if (cur_ext->type == 0) {
+		if (ntohs(cur_ext->type) == TLS_EXT_SN) {
 			cur_ch_offset += sizeof(tls_ext_t);
 			ext_sn = (tls_ext_sn_t *)cur_ch_offset;
 			cur_ch_offset += sizeof(tls_ext_sn_t);
 			return strndup((const char *)cur_ch_offset, ext_sn->sni_len);
 		}
-		cur_ch_offset += cur_ext->len;
-		ext_len -= cur_ext->len;
+		cur_ch_offset += sizeof(tls_ext_t) + ntohs(cur_ext->len);
+		ext_len -= sizeof(tls_ext_t) + ntohs(cur_ext->len);
 	}
 
 	return NULL;
