@@ -2,7 +2,8 @@
 tags
 
 # binary files
-https_capture
+http_capture
+http_capture_dbg
 
 # swap files
 *.swp

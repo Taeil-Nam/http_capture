@@ -42,7 +42,7 @@ typedef struct pkt {
 * PROTOTYPES
 ********************************************************************************
 */
-void pkt_capture_setup(void);
+int pkt_capture_setup(void);
 int pkt_capture(void);
 void pkt_capture_free(void);
 

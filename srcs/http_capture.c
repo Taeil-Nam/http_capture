@@ -83,7 +83,10 @@ static void init(void)
 	cfg_apply();
 
 	/* 패킷 캡처 관련 설정 */
-	pkt_capture_setup();
+	if (pkt_capture_setup() == -1) {
+		syslog(LOG_INFO, "daemon terminated.");
+		exit(EXIT_FAILURE);
+	}
 }
 
 /**
@@ -100,11 +103,11 @@ static void run(void)
 {
 	struct timespec start_time, cur_time;
 	int elapsed_time = 0;
-	// int cnt = 0; // leak test code
 
 	syslog(LOG_INFO, "Packet capture...[START]");
 	clock_gettime(CLOCK_MONOTONIC, &start_time);
 	while (true) {
+
 		/* 패킷 캡처 */
 		if (pkt_capture() == -1) {
 			break;
@@ -118,17 +121,14 @@ static void run(void)
 
 			/* conf 파일 수정시 */
 			if (cfg_file_is_modified()) {
-				/*
-				cnt++; // leak test code
-				if (cnt > 2) // leak test code
-					break; // leak test code
-				*/
 
 				/* 변경된 설정으로 재설정 */
 				syslog(LOG_INFO, "Packet capture...[DONE]");
 				syslog(LOG_INFO, "Contiguration file modified.");
 				cfg_apply();
-				pkt_capture_setup();
+				if (pkt_capture_setup() == -1) {
+					break;
+				}
 				syslog(LOG_INFO, "Packet capture...[START]");
 			}
 			start_time = cur_time;
@@ -153,7 +153,7 @@ static void cleanup(void)
 	pkt_capture_free();
 	syslog(LOG_INFO, "Cleanup resources...[DONE]");
 	syslog(LOG_INFO, "daemon terminated.");
-	closelog(); // syslog 종료
+	closelog();
 }
 
 /**

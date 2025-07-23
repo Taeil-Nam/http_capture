@@ -31,6 +31,7 @@ static pcap_t *pcap_handle; /**< 패킷 캡처 로직 handle용 변수 */
 static pcap_dumper_t *dumper; /**< 패킷 dump용 변수 */
 static const char *net_if; /**< 패킷을 캡처할 네트워크 인터페이스 */
 static int pkt_cnts; /**< 캡처할 패킷의 개수. 0 = 무제한 */
+static int pcap_cnts; /**< 캡처된 패킷의 개수 */
 static const char *target_ip; /**< 캡처할 패킷의 IP 주소 */
 static unsigned short target_port; /**< 캡처할 패킷의 Port 번호 */
 static char err_buf[PCAP_ERRBUF_SIZE]; /**< PCAP 관련 에러 메시지 buffer */
@@ -49,9 +50,9 @@ static void pkt_info_log(pkt_t *pkt);
 패킷 캡처 관련 초기 설정 로직 수행
 
 @param void
-@return void
+@return int 성공시 0, pcap 설정 실패시 -1 반환
 */
-void pkt_capture_setup(void)
+int pkt_capture_setup(void)
 {
 	syslog(LOG_INFO, "Setting packet capture...[START]");
 
@@ -66,16 +67,16 @@ void pkt_capture_setup(void)
 	pcap_handle = pcap_create(net_if, err_buf);
 	if (!pcap_handle) {
 		syslog(LOG_ERR, "%s", err_buf);
-		return;
+		return -1;
 	}
 
 	/* pcap_t 설정 */
 	if (pcap_set_immediate_mode(pcap_handle, 1) != 0) {
 		syslog(LOG_ERR, "Can't set immediate mode to pcap.");
-		return;
+		return -1;
 	} else if (pcap_setnonblock(pcap_handle, 1, err_buf) != 0) {
 		syslog(LOG_ERR, "%s", pcap_geterr(pcap_handle));
-		return;
+		return -1;
 	}
 
 	/* pcap_t 활성화 */
@@ -83,7 +84,7 @@ void pkt_capture_setup(void)
 		syslog(LOG_ERR, "%s", pcap_geterr(pcap_handle));
 		pcap_close(pcap_handle);
 		pcap_handle = NULL;
-		return;
+		return -1;
 	}
 
 	/* dump 파일 생성 */
@@ -99,6 +100,7 @@ void pkt_capture_setup(void)
 
 	/* 패킷 카운트 설정 */
 	pkt_cnts = atoi(cfg_val_find(CFG_PKT_CNTS));
+	pcap_cnts = 0;
 
 	/* IP 필터링 설정 */
 	target_ip = cfg_val_find(CFG_TARGET_IP);
@@ -107,6 +109,8 @@ void pkt_capture_setup(void)
 	target_port = atoi(cfg_val_find(CFG_TARGET_PORT));
 
 	syslog(LOG_INFO, "Setting packet capture...[DONE]");
+
+	return 0;
 }
 
 /**
@@ -121,7 +125,6 @@ int pkt_capture(void)
 {
 	pkt_t pkt;
 	int retval = 0;
-	int pcap_cnts = 0;
 
 	/* pkt_cnts 설정 값 만큼 패킷 캡처된 경우 */
 	if (pkt_cnts != 0 && pcap_cnts >= pkt_cnts) {
@@ -145,7 +148,7 @@ int pkt_capture(void)
 		return 0;
 	}
 
-	/* packet에 대한 dump 생성 */
+	/* packet dump 생성 */
 	if (cfg_dump_is_used()) {
 		pcap_dump((u_char *)dumper, pkt.pkt_hdr, pkt.pkt_data);
 	}
@@ -305,7 +308,6 @@ static void pkt_info_log(pkt_t *pkt)
 			"!!!!! TLS_SNI = [%s] !!!!!",
 			pkt->tls_sni);
 	}
-
 	LOG(INFO, "===PACKET INFO===[DONE]\n");
 }
 
