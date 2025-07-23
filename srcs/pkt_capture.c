@@ -131,10 +131,13 @@ int pkt_capture(void)
 		return -1;
 	}
 
+	/* pkt 초기화 */
+	memset(&pkt, 0, sizeof(pkt));
+
 	/* 패킷 1개 캡처 */
 	retval = pcap_next_ex(pcap_handle, &(pkt.pkt_hdr), &(pkt.pkt_data));
 
-	/* 오류가 발생했거나, 캡처된 패킷이 없는 경우 */
+	/* 오류가 발생했거나(-1), 캡처된 패킷이 없는 경우(0) */
 	if (retval == PCAP_ERROR) {
 		LOG(ERR, "%s", pcap_geterr(pcap_handle));
 		return -1;
