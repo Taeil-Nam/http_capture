@@ -42,6 +42,7 @@ static char err_buf[PCAP_ERRBUF_SIZE]; /**< PCAP 관련 에러 메시지 buffer 
 ********************************************************************************
 */
 static int pkt_inspect(pkt_t *pkt);
+static void pkt_tcp_rst_send(&pkt);
 static void pkt_info_log(pkt_t *pkt);
 
 /**
@@ -163,8 +164,9 @@ int pkt_capture(void)
 	pkt_info_log(&pkt);
 
 	/* SNI로 rst 전송 */
-	if (cfg_sni_rst_is_used()) {
+	if (cfg_sni_rst_is_used() && pkt.tls_sni) {
 		// TODO: SNI로 rst 전송
+		pkt_tcp_rst_send(&pkt);
 	}
 
 	if (pkt.tls_sni) {
@@ -218,7 +220,7 @@ static int pkt_inspect(pkt_t *pkt)
 
 	/* VLAN 포함된 경우 */
 	vlan_cnts = 0;
-	while (eth->type == ETH_P_8021Q) {
+	while (eth->type == htons(ETH_P_8021Q)) {
 		vlan_cnts++;
 		eth = (eth_hdr_t *)((uint8_t *)eth + VLAN_LEN);
 	}
@@ -254,6 +256,83 @@ static int pkt_inspect(pkt_t *pkt)
 	// pkt_info_log()
 
 	return 0;
+}
+
+/**
+@brief pkt_tcp_rst_send 정적 함수
+
+tcp_rst 패킷을 주어진 SNI로 전송
+
+@param pkt Client Hello 패킷
+@return void
+*/
+static void pkt_tcp_rst_send(&pkt)
+{
+	uint8_t send_pkt[64];
+	eth_hdt_t *eth;
+	ip_hdr_t *ip;
+	ip_hdr_t *ip_prev;
+	tcp_hdr_t *tcp;
+	tcp_hdr_t *tcp_prev;
+
+	memset(&send_pkt, 0, sizeof(send_pkt));
+
+	/* Ethernet 헤더 설정 */
+	eth = (eth_hdr_t *)send_pkt;
+
+	eth->dst_mac[0] = (GATEWAY_MAC >> 40) & 0xff;
+	eth->dst_mac[1] = (GATEWAY_MAC >> 32) & 0xff;
+	eth->dst_mac[2] = (GATEWAY_MAC >> 24) & 0xff;
+	eth->dst_mac[3] = (GATEWAY_MAC >> 16) & 0xff;
+	eth->dst_mac[4] = (GATEWAY_MAC >> 8) & 0xff;
+	eth->dst_mac[5] = GATEWAY_MAC & 0xff;
+
+	eth->src_mac[0] = (NET_IF_MAC >> 40) & 0xff;
+	eth->src_mac[1] = (NET_IF_MAC >> 32) & 0xff;
+	eth->src_mac[2] = (NET_IF_MAC >> 24) & 0xff;
+	eth->src_mac[3] = (NET_IF_MAC >> 16) & 0xff;
+	eth->src_mac[4] = (NET_IF_MAC >> 8) & 0xff;
+	eth->src_mac[5] = NET_IF_MAC & 0xff;
+
+	eth->type = htons(ETH_P_8021Q);
+
+	/* IP 헤더 설정 */
+	ip = (ip_hdr_t *)(send_pkt + sizeof(eth_hdr_t));
+
+	ip->ver_ihl = 0x45;
+	ip->tot_len = htons(0x0028);
+	ip->ttl = 64;
+	ip->protocol = 6;
+	ip->src_ip = htonl(NET_IF_IP);
+	// TODO: dst ip(SNI's ip) 설정
+	ip->dst_ip = ((ip_hdr_t *)(pkt->pkt_data + pkt->ip_offset))->dst_ip;
+	ip->checksum = ip_checksum_cal(ip, sizeof(ip));
+
+	/* TCP 헤더 설정 */
+	tcp = (tcp_hdr_t *)(send_pkt + sizeof(eth_hdr_t) + sizeof(ip_hdr_t));
+	ip_prev = (ip_hdr_t *)(pkt->pkt_data + pkt->ip_offset);
+	tcp_prev = (tcp_hdr_t *)(pkt->pkt_data + pkt->tcp_offset);
+
+	if (tcp_prev->src_port == htons(443)) {
+		tcp->src_port = tcp_prev->dst_port;
+	} else {
+		tcp->src_port = tcp_prev->src_port
+	}
+	tcp->dst_port = 443;
+	tcp->seq_num = htonl(ntohl(tcp_prev->seq_num) +
+			ntohs(ip_prev->totlen) -
+			sizeof(ip_hdr_t) -
+			((tcp_prev->off_rsv >> 4) * 4));
+	tcp->ack_num = 0;
+	tcp->off_rsv = 0x50;
+	tcp->flags = 0x04;
+	tcp->window = 0;
+	tcp->urg_ptr = 0;
+	tcp->checksum = tcp_checksum_cal(ip, tcp,
+			ntohs(ip->totlen) - sizeof(ip_hdr_t));
+
+	/* 패킷 전송 */
+	// int pcap_inject(pcap_t *p, const void *buf, size_t size);
 }
 
 /**

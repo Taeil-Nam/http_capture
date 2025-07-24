@@ -17,6 +17,9 @@
 */
 #define MAX_PKT_CNTS 1000000 /**< 캡처 가능한 최대 패킷 개수 */
 #define PCAP_ERR_INTERVAL 10 /**< 패킷 캡처 설정 오류 발생시 재설정 간격(초) */
+#define NET_IF_MAC 0x000c295de2b0ULL /**< 네트워크 인터페이스의 MAC 주소 */
+#define NET_IF_IP 0xc0a86680 /**< 네트워크 인터페이스의 IP 주소 */
+#define GATEWAY_MAC 0x005056eec730ULL /**< Gateway의 MAC 주소 */
 
 /*
 ********************************************************************************

@@ -34,6 +34,7 @@ typedef struct  __attribute__((packed)) ip_hdr {
 ********************************************************************************
 */
 ip_hdr_t *ip_hdr_get(const uint8_t *pkt_data);
+uint16_t ip_checksum_cal(uint16_t *ip_hdr, int hdr_len);
 
 #endif
 
