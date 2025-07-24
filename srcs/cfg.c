@@ -60,6 +60,7 @@ static int cfg_val_verify(void);
 static void cfg_info_save(void);
 static void cfg_last_mtime_update(void);
 static void cfg_invalid_err(int);
+static bool cfg_has_num(const char *str);
 
 /**
 @brief cfg_apply 함수
@@ -415,8 +416,10 @@ conf 파일로부터 파싱된 value 값 검사
 static int cfg_val_verify(void)
 {
 	const char *net_if_name;
+	const char *pkt_cnts_str;
 	int pkt_cnts;
 	const char *target_ip;
+	const char *target_port_str;
 	int target_port;
 	bool is_exist = false;
 	struct ifaddrs *ifaddr, *ifa;
@@ -447,6 +450,11 @@ static int cfg_val_verify(void)
 	}
 
 	/* pkt_cnts 값 검사 */
+	pkt_cnts_str = cfg_val_find(CFG_PKT_CNTS);
+	if (!cfg_has_num(pkt_cnts_str)) {
+		syslog(LOG_ERR, "Invalid pkt_cnts(%s).", pkt_cnts_str);
+		return -1;
+	}
 	pkt_cnts = atoi(cfg_val_find(CFG_PKT_CNTS));
 	if (pkt_cnts < 0 || pkt_cnts > MAX_PKT_CNTS) {
 		syslog(LOG_ERR, "Invalid pkt_cnts(%d).", pkt_cnts);
@@ -462,6 +470,11 @@ static int cfg_val_verify(void)
 	}
 
 	/* target_port 값 검사 */
+	target_port_str = cfg_val_find(CFG_TARGET_PORT);
+	if (!cfg_has_num(target_port_str)) {
+	    syslog(LOG_ERR, "Invalid target_port(%s).", target_port_str);
+		return -1;
+	}
 	target_port = atoi(cfg_val_find(CFG_TARGET_PORT));
 	if (target_port < 0 || target_port > 65535) {
 	    syslog(LOG_ERR, "Invalid target_port(%d).", target_port);
@@ -540,5 +553,27 @@ static void cfg_invalid_err(int line_num)
 	syslog(LOG_ERR,
 		"invalid configuration file format at line %d.",
 		line_num);
+}
+
+/**
+@brief cfg_has_num 정적 함수
+
+설정 값에 숫자가 포함되어 있는지 확인
+
+@param str 확인할 설정 값
+@return bool 숫자가 포함되어 있으면 true, 포함안되어 있으면 false 반환
+*/
+static bool cfg_has_num(const char *str)
+{
+	int idx = 0;
+
+	while (str[idx]) {
+		if (str[idx] >= '0' && str[idx] <= '9') {
+			return true;
+		}
+		idx++;
+	}
+
+	return false;
 }
 
