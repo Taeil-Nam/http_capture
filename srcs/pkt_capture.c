@@ -337,6 +337,7 @@ static void pkt_tcp_rst_send(pkt_t *pkt)
 			ntohs(ip->tot_len) - sizeof(ip_hdr_t));
 
 	/* 패킷 전송 */
+	/* 1. pcap_inject */
 	int retval = pcap_inject(pcap_handle, send_pkt, sizeof(send_pkt));
 	if (retval == PCAP_ERROR) {
 		LOG(ERR, "Error send tcp_rst : %s", pcap_geterr(pcap_handle));
@@ -345,34 +346,6 @@ static void pkt_tcp_rst_send(pkt_t *pkt)
 	}
 
 	/* test code */
-	/*
-	int sock = socket(AF_PACKET, SOCK_RAW, htons(ETH_P_ALL));
-	if (sock == -1) {
-		LOG(ERR, "Error create socket : %s", strerror(errno));
-		return;
-	}
-
-	struct ifreq ifr;
-	memset(&ifr, 0, sizeof(ifr));
-	strncpy(ifr.ifr_name, "ens33", IFNAMSIZ - 1);
-	if (ioctl(sock, SIOCGIFINDEX, &ifr) < 0) {
-		LOG(ERR, "Error get if_idx : %s", strerror(errno));
-	}
-	int ifindex = ifr.ifr_ifindex;
-	struct sockaddr_ll dst_addr;
-	memset(&dst_addr, 0, sizeof(struct sockaddr_ll));
-	dst_addr.sll_family = AF_PACKET;
-	dst_addr.sll_ifindex = ifindex;
-	dst_addr.sll_halen = ETH_ALEN;
-	memcpy(dst_addr.sll_addr, eth->dst_mac, 6);
-
-	if (sendto(sock, &send_pkt, sizeof(send_pkt), 0,
-				(struct sockaddr *)&dst_addr, sizeof(dst_addr)) == -1) {
-		LOG(ERR, "Error packet sent : %s", strerror(errno));
-		return;
-	}
-	*/
-
 	LOG(INFO, "=====Sent TCP_rst packet=====");
 	LOG(INFO, "Sent packet size = %u", retval);
 

@@ -133,7 +133,7 @@ static void run(void)
 			}
 			start_time = cur_time;
 		}
-		usleep(10000);
+		usleep(100);
 	}
 	syslog(LOG_INFO, "Packet capture...[DONE]");
 }
