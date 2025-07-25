@@ -307,6 +307,7 @@ static void pkt_tcp_rst_send(pkt_t *pkt)
 
 	ip->ver_ihl = 0x45;
 	ip->tot_len = htons(0x0028);
+	ip->frag_offset = htons(0x4000);
 	ip->ttl = 64;
 	ip->protocol = 6;
 	ip->src_ip = htonl(NET_IF_IP);
