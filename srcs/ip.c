@@ -30,17 +30,18 @@ IP Checksum 값 계산 후 반환
 @param hdr_len ip 헤더의 크기
 @return uint16_t 계산된 Checksum 값
 */
-uint16_t ip_checksum_cal(uint16_t *ip_hdr, int hdr_len)
+uint16_t ip_checksum_cal(uint8_t *ip_hdr, int hdr_len)
 {
+	uint16_t *data = (uint16_t *)ip_hdr;
 	uint32_t checksum = 0;
 
 	while (hdr_len > 1) {
-		checksum += ntohs(*ip_hdr);
-		ip_hdr++;
+		checksum += ntohs(*data);
+		data++;
 		hdr_len -= 2;
 	}
 	if (hdr_len == 1) {
-		checksum += *((uint8_t *)ip_hdr);
+		checksum += *((uint8_t *)data);
 	}
 
     checksum = (checksum >> 16) + (checksum & 0xFFFF);

@@ -6,10 +6,14 @@
 */
 
 #include <arpa/inet.h>
+#include <errno.h>
 #include <linux/if_ether.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
+#include <sys/ioctl.h>
+#include <net/if.h>
+#include <netpacket/packet.h>
 #include <syslog.h>
 #include <netinet/in.h>
 #include <pcap.h>
@@ -42,7 +46,7 @@ static char err_buf[PCAP_ERRBUF_SIZE]; /**< PCAP 관련 에러 메시지 buffer 
 ********************************************************************************
 */
 static int pkt_inspect(pkt_t *pkt);
-static void pkt_tcp_rst_send(&pkt);
+static void pkt_tcp_rst_send(pkt_t *pkt);
 static void pkt_info_log(pkt_t *pkt);
 
 /**
@@ -266,16 +270,18 @@ tcp_rst 패킷을 주어진 SNI로 전송
 @param pkt Client Hello 패킷
 @return void
 */
-static void pkt_tcp_rst_send(&pkt)
+static void pkt_tcp_rst_send(pkt_t *pkt)
 {
-	uint8_t send_pkt[64];
-	eth_hdt_t *eth;
+	uint8_t send_pkt[60];
+	eth_hdr_t *eth;
 	ip_hdr_t *ip;
 	ip_hdr_t *ip_prev;
 	tcp_hdr_t *tcp;
 	tcp_hdr_t *tcp_prev;
 
 	memset(&send_pkt, 0, sizeof(send_pkt));
+	ip_prev = (ip_hdr_t *)(pkt->pkt_data + pkt->ip_offset);
+	tcp_prev = (tcp_hdr_t *)(pkt->pkt_data + pkt->tcp_offset);
 
 	/* Ethernet 헤더 설정 */
 	eth = (eth_hdr_t *)send_pkt;
@@ -294,7 +300,7 @@ static void pkt_tcp_rst_send(&pkt)
 	eth->src_mac[4] = (NET_IF_MAC >> 8) & 0xff;
 	eth->src_mac[5] = NET_IF_MAC & 0xff;
 
-	eth->type = htons(ETH_P_8021Q);
+	eth->type = htons(ETH_P_IP);
 
 	/* IP 헤더 설정 */
 	ip = (ip_hdr_t *)(send_pkt + sizeof(eth_hdr_t));
@@ -305,22 +311,20 @@ static void pkt_tcp_rst_send(&pkt)
 	ip->protocol = 6;
 	ip->src_ip = htonl(NET_IF_IP);
 	// TODO: dst ip(SNI's ip) 설정
-	ip->dst_ip = ((ip_hdr_t *)(pkt->pkt_data + pkt->ip_offset))->dst_ip;
-	ip->checksum = ip_checksum_cal(ip, sizeof(ip));
+	ip->dst_ip = ip_prev->dst_ip;
+	ip->checksum = ip_checksum_cal((uint8_t *)ip, sizeof(ip));
 
 	/* TCP 헤더 설정 */
 	tcp = (tcp_hdr_t *)(send_pkt + sizeof(eth_hdr_t) + sizeof(ip_hdr_t));
-	ip_prev = (ip_hdr_t *)(pkt->pkt_data + pkt->ip_offset);
-	tcp_prev = (tcp_hdr_t *)(pkt->pkt_data + pkt->tcp_offset);
 
 	if (tcp_prev->src_port == htons(443)) {
 		tcp->src_port = tcp_prev->dst_port;
 	} else {
-		tcp->src_port = tcp_prev->src_port
+		tcp->src_port = tcp_prev->src_port;
 	}
-	tcp->dst_port = 443;
+	tcp->dst_port = htons(443);
 	tcp->seq_num = htonl(ntohl(tcp_prev->seq_num) +
-			ntohs(ip_prev->totlen) -
+			ntohs(ip_prev->tot_len) -
 			sizeof(ip_hdr_t) -
 			((tcp_prev->off_rsv >> 4) * 4));
 	tcp->ack_num = 0;
@@ -328,11 +332,56 @@ static void pkt_tcp_rst_send(&pkt)
 	tcp->flags = 0x04;
 	tcp->window = 0;
 	tcp->urg_ptr = 0;
-	tcp->checksum = tcp_checksum_cal(ip, tcp,
-			ntohs(ip->totlen) - sizeof(ip_hdr_t));
+	tcp->checksum = tcp_checksum_cal((uint8_t *)ip, (uint8_t *)tcp,
+			ntohs(ip->tot_len) - sizeof(ip_hdr_t));
 
 	/* 패킷 전송 */
-	// int pcap_inject(pcap_t *p, const void *buf, size_t size);
+	int retval = pcap_inject(pcap_handle, send_pkt, sizeof(send_pkt));
+	if (retval == PCAP_ERROR) {
+		LOG(ERR, "Error send tcp_rst : %s", pcap_geterr(pcap_handle));
+	} else if (retval == 0) {
+		LOG(ERR, "Error send tcp_rst : sent packet size = 0");
+	}
+
+	/* test code */
+	/*
+	int sock = socket(AF_PACKET, SOCK_RAW, htons(ETH_P_ALL));
+	if (sock == -1) {
+		LOG(ERR, "Error create socket : %s", strerror(errno));
+		return;
+	}
+
+	struct ifreq ifr;
+	memset(&ifr, 0, sizeof(ifr));
+	strncpy(ifr.ifr_name, "ens33", IFNAMSIZ - 1);
+	if (ioctl(sock, SIOCGIFINDEX, &ifr) < 0) {
+		LOG(ERR, "Error get if_idx : %s", strerror(errno));
+	}
+	int ifindex = ifr.ifr_ifindex;
+	struct sockaddr_ll dst_addr;
+	memset(&dst_addr, 0, sizeof(struct sockaddr_ll));
+	dst_addr.sll_family = AF_PACKET;
+	dst_addr.sll_ifindex = ifindex;
+	dst_addr.sll_halen = ETH_ALEN;
+	memcpy(dst_addr.sll_addr, eth->dst_mac, 6);
+
+	if (sendto(sock, &send_pkt, sizeof(send_pkt), 0,
+				(struct sockaddr *)&dst_addr, sizeof(dst_addr)) == -1) {
+		LOG(ERR, "Error packet sent : %s", strerror(errno));
+		return;
+	}
+	*/
+
+	LOG(INFO, "=====Sent TCP_rst packet=====");
+	LOG(INFO, "Sent packet size = %u", retval);
+
+	pkt_t tcp_rst;
+
+	memset(&tcp_rst, 0, sizeof(pkt_t));
+	tcp_rst.pkt_data = (const u_char *)(&send_pkt);
+	tcp_rst.ip_offset = 14;
+	tcp_rst.tcp_offset = 34;
+	pkt_info_log(&tcp_rst);
 }
 
 /**
@@ -361,11 +410,13 @@ static void pkt_info_log(pkt_t *pkt)
 	LOG(INFO,
 		"src_mac = [%02x:%02x:%02x:%02x:%02x:%02x], "
 		"dst_mac = [%02x:%02x:%02x:%02x:%02x:%02x], "
+		"eth_type = [0x%04x], "
 		"eth_size = [%d]",
 		eth->src_mac[0], eth->src_mac[1], eth->src_mac[2],
 		eth->src_mac[3], eth->src_mac[4], eth->src_mac[5],
 		eth->dst_mac[0], eth->dst_mac[1], eth->dst_mac[2],
 		eth->dst_mac[3], eth->dst_mac[4], eth->dst_mac[5],
+		ntohs(eth->type),
 		pkt->ip_offset);
 
 	LOG(INFO,

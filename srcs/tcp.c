@@ -46,7 +46,7 @@ TCP Checksum 값 계산 후 반환
 @param tcp_len TCP 전체 길이
 @return uint16_t 계산된 TCP Checksum 값
 */
-uint16_t tcp_checksum_cal(uint16_t *ip_hdr, uint16_t *tcp_hdr, int tcp_len)
+uint16_t tcp_checksum_cal(uint8_t *ip_hdr, uint8_t *tcp_hdr, int tcp_len)
 {
 	pseudo_hdr_t pseudo_hdr;
 	int pseudo_hdr_len = PSEUDO_HDR_LEN;

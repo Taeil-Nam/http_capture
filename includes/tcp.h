@@ -40,7 +40,7 @@ typedef struct __attribute__((packed)) tcp_hdr {
 ********************************************************************************
 */
 tcp_hdr_t *tcp_hdr_get(const uint8_t *pkt_data);
-uint16_t tcp_checksum_cal(uint16_t *ip_hdr, uint16_t *tcp_hdr, int tcp_len);
+uint16_t tcp_checksum_cal(uint8_t *ip_hdr, uint8_t *tcp_hdr, int tcp_len);
 
 #endif
 
