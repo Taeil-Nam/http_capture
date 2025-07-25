@@ -42,11 +42,11 @@ tcp_hdr_t *tcp_hdr_get(const uint8_t *pkt_data)
 TCP Checksum 값 계산 후 반환
 
 @param ip_hdr 계산에 사용될 IP 헤더
-@param tcp_hdr 계산에 사용될 TCP 헤더
+@param tcp 계산에 사용될 TCP 전체 데이터
 @param tcp_len TCP 전체 길이
 @return uint16_t 계산된 TCP Checksum 값
 */
-uint16_t tcp_checksum_cal(uint8_t *ip_hdr, uint8_t *tcp_hdr, int tcp_len)
+uint16_t tcp_checksum_cal(uint8_t *ip_hdr, uint8_t *tcp, int tcp_len)
 {
 	pseudo_hdr_t pseudo_hdr;
 	int pseudo_hdr_len = PSEUDO_HDR_LEN;
@@ -68,7 +68,7 @@ uint16_t tcp_checksum_cal(uint8_t *ip_hdr, uint8_t *tcp_hdr, int tcp_len)
 	}
 
 	/* TCP header + payload checksum 계산 */
-	data = (uint16_t *)tcp_hdr;
+	data = (uint16_t *)tcp;
 	while (tcp_len > 1) {
 		checksum += ntohs(*data);
 		data++;

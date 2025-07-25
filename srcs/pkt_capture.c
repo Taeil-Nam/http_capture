@@ -313,7 +313,7 @@ static void pkt_tcp_rst_send(pkt_t *pkt)
 	ip->src_ip = htonl(NET_IF_IP);
 	// TODO: dst ip(SNI's ip) 설정
 	ip->dst_ip = ip_prev->dst_ip;
-	ip->checksum = ip_checksum_cal((uint8_t *)ip, sizeof(ip));
+	ip->checksum = ip_checksum_cal((uint8_t *)ip, sizeof(ip_hdr_t));
 
 	/* TCP 헤더 설정 */
 	tcp = (tcp_hdr_t *)(send_pkt + sizeof(eth_hdr_t) + sizeof(ip_hdr_t));
