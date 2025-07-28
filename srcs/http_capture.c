@@ -200,7 +200,7 @@ static void process_demonize(void)
 	chdir("/");
 
 	/* 모든 fd close */
-	for (long fd = sysconf(_SC_OPEN_MAX); fd >= 0; fd--) {
+	for (int fd = sysconf(_SC_OPEN_MAX); fd >= 0; fd--) {
 		close(fd);
 	}
 }
