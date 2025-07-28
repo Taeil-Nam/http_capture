@@ -380,7 +380,6 @@ static void pkt_tcp_rst_send(pkt_t *pkt)
 */
 static void pkt_info_log(pkt_t *pkt)
 {
-	eth_hdr_t *eth;
 	ip_hdr_t *ip;
 	char src_ip_str[INET_ADDRSTRLEN];
 	char dst_ip_str[INET_ADDRSTRLEN];
@@ -391,7 +390,6 @@ static void pkt_info_log(pkt_t *pkt)
 	tls_rec_t *tls_rec;
 	tls_hand_t *tls_hand;
 
-	eth = eth_hdr_get(pkt);
 	ip = ip_hdr_get(pkt);
 	tcp = tcp_hdr_get(pkt);
 	if (!inet_ntop(AF_INET, &ip->src_ip, src_ip_str, INET_ADDRSTRLEN)) {
@@ -406,18 +404,7 @@ static void pkt_info_log(pkt_t *pkt)
 	LOG(INFO, "===PACKET INFO===[START]");
 
 	/* Ethernet log */
-	LOG(INFO, "[ETHERNET]");
-	LOG(INFO,
-		"src_mac = [%02x:%02x:%02x:%02x:%02x:%02x], "
-		"dst_mac = [%02x:%02x:%02x:%02x:%02x:%02x], "
-		"eth_type = [0x%04x], "
-		"eth_size = [%d]",
-		eth->src_mac[0], eth->src_mac[1], eth->src_mac[2],
-		eth->src_mac[3], eth->src_mac[4], eth->src_mac[5],
-		eth->dst_mac[0], eth->dst_mac[1], eth->dst_mac[2],
-		eth->dst_mac[3], eth->dst_mac[4], eth->dst_mac[5],
-		ntohs(eth->type),
-		pkt->ip_offset);
+	eth_log(pkt);
 
 	/* IP log */
 	LOG(INFO, "[IP]");

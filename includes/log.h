@@ -25,8 +25,7 @@
 * MACROS
 ********************************************************************************
 */
-#define LOG(level, fmt, ...) \
-	log_wr(level, __FILE__, __LINE__, fmt, ##__VA_ARGS__)
+#define LOG(level, fmt, ...) log_wr(level, fmt, ##__VA_ARGS__)
 
 /*
 ********************************************************************************
@@ -34,8 +33,7 @@
 ********************************************************************************
 */
 void log_file_open(void);
-void log_wr(const char *level, const char *file,
-		int line, const char *fmt, ...);
+void log_wr(const char *level, const char *fmt, ...);
 void log_file_close(void);
 
 #endif

@@ -70,14 +70,11 @@ log 파일에 로그를 출력
 log 파일이 생성되지 않았거나, 미사용 상태인 경우 종료
 
 @param level log 레벨
-@param file log를 출력한 파일명
-@param line log를 출력한 파일의 줄 번호
 @param fmt log 문자열 형식
 @param ... log 문자열 형식에 포함된 가변 인자
 @return void 
 */
-void log_wr(const char *level, const char *file,
-		int line, const char *fmt, ...)
+void log_wr(const char *level, const char *fmt, ...)
 {
 	time_t now = time(NULL);
 	struct tm *t = localtime(&now);
@@ -93,8 +90,7 @@ void log_wr(const char *level, const char *file,
 	strftime(time_buf, sizeof(time_buf), "%Y-%m-%d %H:%M:%S", t);
 	
 	/* log 출력 */
-	fprintf(log_file, "[%s][%s][%s:%d] ",
-			time_buf, level, file, line);
+	fprintf(log_file, "[%s][%s] ", time_buf, level);
 	va_start(args, fmt);
 	vfprintf(log_file, fmt, args);
 	va_end(args);

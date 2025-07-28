@@ -37,6 +37,7 @@ typedef struct __attribute__((packed)) eth_hdr {
 ********************************************************************************
 */
 eth_hdr_t *eth_hdr_get(pkt_t *pkt);
+void eth_log(pkt_t *pkt);
 
 #endif
 
