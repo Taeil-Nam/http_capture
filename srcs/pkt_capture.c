@@ -215,7 +215,7 @@ static int pkt_inspect(pkt_t *pkt)
 	char dst_ip_str[INET_ADDRSTRLEN];
 
 	/* Ethernet 파싱 */
-	eth = eth_hdr_get(pkt->pkt_data);
+	eth = eth_hdr_get(pkt);
 
 	/* VLAN이 포함된 경우 */
 	vlan_cnts = 0;
@@ -230,7 +230,7 @@ static int pkt_inspect(pkt_t *pkt)
 		return -1;
 	}
 
-	ip = ip_hdr_get(pkt->pkt_data + pkt->ip_offset);
+	ip = ip_hdr_get(pkt);
 	pkt->tcp_offset = pkt->ip_offset + ((ip->ver_ihl & 0x0F) * 4);
 	if (!inet_ntop(AF_INET, &ip->src_ip, src_ip_str, INET_ADDRSTRLEN)) {
 		LOG(ERR, "%s", strerror(errno));
@@ -251,7 +251,7 @@ static int pkt_inspect(pkt_t *pkt)
 		return -1;
 	}
 
-	tcp = tcp_hdr_get(pkt->pkt_data + pkt->tcp_offset);
+	tcp = tcp_hdr_get(pkt);
 	if (ntohs(ip->tot_len) -
 		((ip->ver_ihl & 0x0F) * 4) -
 		((tcp->off_rsv >> 4) * 4) >= 5) {
@@ -391,9 +391,9 @@ static void pkt_info_log(pkt_t *pkt)
 	tls_rec_t *tls_rec;
 	tls_hand_t *tls_hand;
 
-	eth = eth_hdr_get(pkt->pkt_data);
-	ip = ip_hdr_get(pkt->pkt_data + pkt->ip_offset);
-	tcp = tcp_hdr_get(pkt->pkt_data + pkt->tcp_offset);
+	eth = eth_hdr_get(pkt);
+	ip = ip_hdr_get(pkt);
+	tcp = tcp_hdr_get(pkt);
 	if (!inet_ntop(AF_INET, &ip->src_ip, src_ip_str, INET_ADDRSTRLEN)) {
 		LOG(ERR, "%s", strerror(errno));
 		return;
@@ -454,7 +454,7 @@ static void pkt_info_log(pkt_t *pkt)
 		LOG(INFO, "===PACKET INFO===[DONE]\n");
 		return;
 	}
-	tls_rec = tls_rec_get(pkt->pkt_data + pkt->tls_rec_offset);
+	tls_rec = tls_rec_get(pkt);
 
 	LOG(INFO, "[TLS]");
 	switch (tls_rec->type) {
@@ -481,7 +481,7 @@ static void pkt_info_log(pkt_t *pkt)
 		LOG(INFO, "===PACKET INFO===[DONE]\n");
 		return;
 	}
-	tls_hand = tls_hand_get(pkt->pkt_data + pkt->tls_hand_offset);
+	tls_hand = tls_hand_get(pkt);
 	
 	switch (tls_hand->type) {
 	case TLS_HANDSHAKE_CH:

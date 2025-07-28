@@ -15,12 +15,12 @@
 
 주어진 패킷에서 TLS record 헤더 반환
 
-@param pkt_data 패킷 데이터
+@param pkt pkt_t 구조체
 @return tls_rec_t * tls record 헤더 반환
 */
-tls_rec_t *tls_rec_get(const uint8_t *pkt_data)
+tls_rec_t *tls_rec_get(pkt_t *pkt)
 {
-	return (tls_rec_t *)pkt_data;
+	return (tls_rec_t *)(pkt->pkt_data + pkt->tls_rec_offset);
 }
 
 /**
@@ -28,12 +28,12 @@ tls_rec_t *tls_rec_get(const uint8_t *pkt_data)
 
 주어진 패킷에서 TLS handshake 헤더 반환
 
-@param pkt_data 패킷 데이터
+@param pkt pkt_t 구조체
 @return tls_hand_t * tls handshake 헤더 반환
 */
-tls_hand_t *tls_hand_get(const uint8_t *pkt_data)
+tls_hand_t *tls_hand_get(pkt_t *pkt)
 {
-	return (tls_hand_t *)pkt_data;
+	return (tls_hand_t *)(pkt->pkt_data + pkt->tls_hand_offset);
 }
 
 /**
@@ -66,14 +66,14 @@ void tls_sni_get(pkt_t *pkt)
 	}
 
 	/* TLS Record 파싱 */
-	tls_rec = tls_rec_get(pkt->pkt_data + pkt->tls_rec_offset);
+	tls_rec = tls_rec_get(pkt);
 	pkt->tls_hand_offset = pkt->tls_rec_offset + sizeof(tls_rec_t);
 	if (tls_rec->type != TLS_HANDSHAKE) {
 		return;
 	}
 
 	/* TLS Handshake 파싱 */
-	tls_hand = tls_hand_get(pkt->pkt_data + pkt->tls_hand_offset);
+	tls_hand = tls_hand_get(pkt);
 	pkt->tls_ch_offset = pkt->tls_hand_offset + sizeof(tls_hand_t);
 	ch_len = 0;
 	ch_len = (tls_hand->len[0] << 16) |

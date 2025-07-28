@@ -9,6 +9,7 @@
 #define ETH_H
 
 #include <stdint.h>
+#include "pkt_capture.h"
 
 /*
 ********************************************************************************
@@ -35,7 +36,7 @@ typedef struct __attribute__((packed)) eth_hdr {
 * PROTOTYPES
 ********************************************************************************
 */
-eth_hdr_t *eth_hdr_get(const uint8_t *pkt_data);
+eth_hdr_t *eth_hdr_get(pkt_t *pkt);
 
 #endif
 

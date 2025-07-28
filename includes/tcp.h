@@ -9,6 +9,7 @@
 #define TCP_H
 
 #include <stdint.h>
+#include "pkt_capture.h"
 
 /*
 ********************************************************************************
@@ -39,7 +40,7 @@ typedef struct __attribute__((packed)) tcp_hdr {
 * PROTOTYPES
 ********************************************************************************
 */
-tcp_hdr_t *tcp_hdr_get(const uint8_t *pkt_data);
+tcp_hdr_t *tcp_hdr_get(pkt_t *pkt);
 uint16_t tcp_checksum_cal(uint8_t *ip_hdr, uint8_t *tcp, int tcp_len);
 
 #endif

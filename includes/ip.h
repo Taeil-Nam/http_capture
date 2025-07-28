@@ -9,6 +9,7 @@
 #define IP_H
 
 #include <stdint.h>
+#include "pkt_capture.h"
 
 /*
 ********************************************************************************
@@ -33,7 +34,7 @@ typedef struct  __attribute__((packed)) ip_hdr {
 * PROTOTYPES
 ********************************************************************************
 */
-ip_hdr_t *ip_hdr_get(const uint8_t *pkt_data);
+ip_hdr_t *ip_hdr_get(pkt_t *pkt);
 uint16_t ip_checksum_cal(uint8_t *ip_hdr, int hdr_len);
 
 #endif

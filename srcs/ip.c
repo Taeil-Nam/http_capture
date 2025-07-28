@@ -13,12 +13,12 @@
 
 주어진 패킷에서 IP 헤더 반환
 
-@param pkt_data 패킷 데이터
+@param pkt pkt_t 구조체
 @return ip_hdr_t * ip_hdr_t 구조체 포인터 반환
 */
-ip_hdr_t *ip_hdr_get(const uint8_t *pkt_data)
+ip_hdr_t *ip_hdr_get(pkt_t *pkt)
 {
-	return (ip_hdr_t *)pkt_data;
+	return (ip_hdr_t *)(pkt->pkt_data + pkt->ip_offset);
 }
 
 /**

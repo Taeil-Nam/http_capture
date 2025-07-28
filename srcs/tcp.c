@@ -28,12 +28,12 @@ typedef struct pseudo_hdr {
 
 주어진 패킷에서 TCP 헤더 반환
 
-@param pkt_data 패킷 데이터
+@param pkt pkt_t 구조체
 @return tcp_hdr_t * tcp_hdr_t 구조체 포인터 반환
 */
-tcp_hdr_t *tcp_hdr_get(const uint8_t *pkt_data)
+tcp_hdr_t *tcp_hdr_get(pkt_t *pkt)
 {
-	return (tcp_hdr_t *)pkt_data;
+	return (tcp_hdr_t *)(pkt->pkt_data + pkt->tcp_offset);
 }
 
 /**
