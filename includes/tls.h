@@ -16,8 +16,26 @@
 * CONSTANTS
 ********************************************************************************
 */
-#define TLS_HANDSHAKE 0x16 /**< TLS 핸드셰이크 메시지 식별 값 */
-#define TLS_HANDSHAKE_CH 0x01 /**< TLS Client Hello 메시지 식별 값 */
+/* TLS 메시지 식별 값 */
+#define TLS_CCS 0x14 /**< TLS ChangeCipherSpec 메시지 식별 값 */
+#define TLS_ALERT 0x15 /**< TLS Alert 메시지 식별 값 */
+#define TLS_HANDSHAKE 0x16 /**< TLS Handshake 메시지 식별 값 */
+#define TLS_APPLICATION 0x17 /**< TLS Application 메시지 식별 값 */
+#define TLS_HEARTBEAT 0x18 /**< TLS Heartbeat 메시지 식별 값 */
+
+/* TLS Handshake 메시지 식별 값 */
+#define TLS_HANDSHAKE_CH 1 /**< Client Hello 메시지 식별 값 */
+#define TLS_HANDSHAKE_SH 2 /**< Server Hello 메시지 식별 값 */
+#define TLS_HANDSHAKE_NST 4 /**< New Session Ticket 메시지 식별 값 */
+#define TLS_HANDSHAKE_EE 8 /**< Encrypted Extensions 메시지 식별 값 */
+#define TLS_HANDSHAKE_CERT 11 /**< Certificate 메시지 식별 값 */
+#define TLS_HANDSHAKE_SKE 12 /**< Server Key Exchange  메시지 식별 값 */
+#define TLS_HANDSHAKE_CR 13 /**< Certificate Request 메시지 식별 값 */
+#define TLS_HANDSHAKE_SHD 14 /**< Server Hello Done 메시지 식별 값 */
+#define TLS_HANDSHAKE_CV 15 /**< Certificate Verify 메시지 식별 값 */
+#define TLS_HANDSHAKE_CKE 16 /**< Client Key Exchange 메시지 식별 값 */
+#define TLS_HANDSHAKE_FIN 20 /**< Finished 메시지 식별 값 */
+
 #define TLS_EXT_SN 0 /**< TLS Extension Server Name 식별 값 */
 
 /* Client Hello 메시지의 각 필드 크기 */
@@ -63,7 +81,7 @@ typedef struct __attribute__((packed)) tls_ext_sn {
 */
 tls_rec_t *tls_rec_get(const uint8_t *pkt_data);
 tls_hand_t *tls_hand_get(const uint8_t *pkt_data);
-const char *tls_sni_get(pkt_t *pkt);
+void tls_sni_get(pkt_t *pkt);
 
 #endif
 

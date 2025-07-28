@@ -40,11 +40,13 @@ tls_hand_t *tls_hand_get(const uint8_t *pkt_data)
 @brief tls_sni_get 함수
 
 TLS Client Hello 메시지의 sni 값 추출
+SNI가 있는 경우 pkt->tls_sni에 SNI 값 저장
+SNI가 없는 경우 pkt->tls_sni에 NULL 저장
 
 @param pkt 패킷 데이터
-@return const char * sni 존재시 문자열 포인터 반환, sni 없을시 NULL 반환
+@return void
 */
-const char *tls_sni_get(pkt_t *pkt)
+void tls_sni_get(pkt_t *pkt)
 {
 	tls_rec_t *tls_rec;
 	tls_hand_t *tls_hand;
@@ -57,11 +59,17 @@ const char *tls_sni_get(pkt_t *pkt)
 	tls_ext_t *cur_ext;
 	tls_ext_sn_t *ext_sn;
 
+	pkt->tls_sni = NULL;
+
+	if (pkt->tls_rec_offset == 0) {
+		return;
+	}
+
 	/* TLS Record 파싱 */
 	tls_rec = tls_rec_get(pkt->pkt_data + pkt->tls_rec_offset);
 	pkt->tls_hand_offset = pkt->tls_rec_offset + sizeof(tls_rec_t);
 	if (tls_rec->type != TLS_HANDSHAKE) {
-		return NULL;
+		return;
 	}
 
 	/* TLS Handshake 파싱 */
@@ -72,7 +80,7 @@ const char *tls_sni_get(pkt_t *pkt)
 			(tls_hand->len[1] << 8) |
 			(tls_hand->len[2]);
 	if (tls_hand->type != TLS_HANDSHAKE_CH) {
-		return NULL;
+		return;
 	}
 
 	/* TLS Client Hello 파싱 */
@@ -104,7 +112,7 @@ const char *tls_sni_get(pkt_t *pkt)
 
 	/* Extension이 없는 경우 */
 	if (ch_len == pkt->tls_ext_offset) {
-		return NULL;
+		return;
 	}
 
 	/* Extension */
@@ -120,12 +128,14 @@ const char *tls_sni_get(pkt_t *pkt)
 			cur_ch_offset += sizeof(tls_ext_t);
 			ext_sn = (tls_ext_sn_t *)cur_ch_offset;
 			cur_ch_offset += sizeof(tls_ext_sn_t);
-			return strndup((const char *)cur_ch_offset, ext_sn->sni_len);
+			pkt->tls_sni =
+				strndup((const char *)cur_ch_offset, ext_sn->sni_len);
+			return;
 		}
 		cur_ch_offset += sizeof(tls_ext_t) + ntohs(cur_ext->len);
 		ext_len -= sizeof(tls_ext_t) + ntohs(cur_ext->len);
 	}
 
-	return NULL;
+	return;
 }
 
