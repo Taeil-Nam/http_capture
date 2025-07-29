@@ -2,13 +2,21 @@
 @file tls.c
 @author 남태일(taeil.nam@monitorapp.com)
 @date 2025-07-22
-@brief TLS 로직 관련 코드 
+@brief TLS 로직 관련 코드
 */
 
 #include <arpa/inet.h>
 #include <string.h>
-#include "log.h"
 #include "tls.h"
+#include "tcp.h"
+#include "log.h"
+
+/*
+********************************************************************************
+* PROTOTYPES
+********************************************************************************
+*/
+static void tls_hand_log(uint8_t type);
 
 /**
 @brief tls_rec_get 함수
@@ -142,26 +150,111 @@ void tls_sni_get(pkt_t *pkt)
 /**
 @brief tls_log 함수
 
-주어진 패킷에서 TLS 정보 로깅 
+주어진 패킷에서 TLS 정보 로깅
 
 @param pkt pkt_t 구조체
 @return void
 */
-/*
 void tls_log(pkt_t *pkt)
 {
-	uint16_t 
+	uint16_t tcp_data_len;
+	uint32_t tls_rec_offset;
 	tls_rec_t *tls_rec;
 	tls_hand_t *tls_hand;
 
-	// 패킷에 TLS가 없는 경우 생략 
+	/* 패킷에 TLS가 없는 경우 생략  */
 	if (pkt->tls_rec_offset == 0) {
 		return;
 	}
 
-	while (
-	tls_rec = tls_rec_get(pkt);
-	LOG(INFO, "[TLS]");
+	tcp_data_len = tcp_data_len_get(pkt);
+	tls_rec_offset = pkt->tls_rec_offset;
+
+	do {
+		tls_rec = (tls_rec_t *)(pkt->pkt_data + tls_rec_offset);
+
+		switch (tls_rec->type) {
+		case TLS_CCS:
+			LOG(INFO, "[TLS]");
+			LOG(INFO, "ChangeCipherSpec Message");
+			break;
+		case TLS_ALERT:
+			LOG(INFO, "[TLS]");
+			LOG(INFO, "Alert Message");
+			break;
+		case TLS_HANDSHAKE:
+			LOG(INFO, "[TLS]");
+			LOG(INFO, "Handshake Message");
+			tls_hand = (tls_hand_t *)(pkt->pkt_data +
+				tls_rec_offset + sizeof(tls_rec_t));
+			tls_hand_log(tls_hand->type);
+			if (pkt->tls_sni) {
+				LOG(INFO, "SNI = [%s]", pkt->tls_sni);
+			}
+			break;
+		case TLS_APPLICATION:
+			LOG(INFO, "[TLS]");
+			LOG(INFO, "Application Message");
+			break;
+		case TLS_HEARTBEAT:
+			LOG(INFO, "[TLS]");
+			LOG(INFO, "Heartbeat Message");
+			break;
+		default:
+			break;
+		}
+		tls_rec_offset += sizeof(tls_rec_t) + ntohs(tls_rec->len);
+
+	} while (tls_rec_offset + sizeof(tls_rec_t) <
+			pkt->tls_rec_offset + tcp_data_len);
 }
+
+/**
+@brief tls_hand_log 정적 함수
+
+주어진 TLS Handskahe 타입에 맞는 로그 출력
+
+@param type TLS Handshake 타입
+@return void
 */
+static void tls_hand_log(uint8_t type)
+{
+	switch (type) {
+	case TLS_HANDSHAKE_CH:
+		LOG(INFO, "Client Hello");
+		break;
+	case TLS_HANDSHAKE_SH:
+		LOG(INFO, "Server Hello");
+		break;
+	case TLS_HANDSHAKE_NST:
+		LOG(INFO, "New Session Ticket");
+		break;
+	case TLS_HANDSHAKE_EE:
+		LOG(INFO, "Encrypted Extensions");
+		break;
+	case TLS_HANDSHAKE_CERT:
+		LOG(INFO, "Certificate");
+		break;
+	case TLS_HANDSHAKE_SKE:
+		LOG(INFO, "Server Key Exchange");
+		break;
+	case TLS_HANDSHAKE_CR:
+		LOG(INFO, "Certificate Request");
+		break;
+	case TLS_HANDSHAKE_SHD:
+		LOG(INFO, "Server Hello Done");
+		break;
+	case TLS_HANDSHAKE_CV:
+		LOG(INFO, "Certificate Verify");
+		break;
+	case TLS_HANDSHAKE_CKE:
+		LOG(INFO, "Client Key Exchange");
+		break;
+	case TLS_HANDSHAKE_FIN:
+		LOG(INFO, "Finished");
+		break;
+	default:
+		break;
+    }
+}
 

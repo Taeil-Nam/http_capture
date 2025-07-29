@@ -252,10 +252,8 @@ static int pkt_inspect(pkt_t *pkt)
 	}
 
 	tcp = tcp_hdr_get(pkt);
-	if (ntohs(ip->tot_len) -
-		((ip->ver_ihl & 0x0F) * 4) -
-		((tcp->off_rsv >> 4) * 4) >= 5) {
-		pkt->tls_rec_offset = pkt->tcp_offset + ((tcp->off_rsv >> 4) * 4);
+	if (tcp_data_len_get(pkt) >= 5) {
+		pkt->tls_rec_offset = pkt->tcp_offset + tcp_hdr_len_get(pkt);
 	}
 
 	/* Port 번호 필터링 */
@@ -329,7 +327,6 @@ static void pkt_tcp_rst_send(pkt_t *pkt)
 	ip->ttl = 64;
 	ip->protocol = 6;
 	ip->src_ip = htonl(NET_IF_IP);
-	// TODO: dst ip(SNI's ip) 설정
 	ip->dst_ip = ip_prev->dst_ip;
 	ip->checksum = ip_checksum_cal((uint8_t *)ip, sizeof(ip_hdr_t));
 
@@ -382,100 +379,11 @@ static void pkt_tcp_rst_send(pkt_t *pkt)
 */
 static void pkt_info_log(pkt_t *pkt)
 {
-	tls_rec_t *tls_rec;
-	tls_hand_t *tls_hand;
-
 	LOG(INFO, "===PACKET INFO===[START]");
-
-	/* Ethernet log */
 	eth_log(pkt);
-
-	/* IP log */
 	ip_log(pkt);
-
-	/* TCP log */
 	tcp_log(pkt);
-
-	/* TLS log */
-	if (pkt->tls_rec_offset == 0) {
-		LOG(INFO, "===PACKET INFO===[DONE]\n");
-		return;
-	}
-	tls_rec = tls_rec_get(pkt);
-
-	LOG(INFO, "[TLS]");
-	switch (tls_rec->type) {
-	case TLS_CCS:
-		LOG(INFO, "ChangeCipherSpec Message");
-		break;
-	case TLS_ALERT:
-		LOG(INFO, "Alert Message");
-		break;
-	case TLS_HANDSHAKE:
-		LOG(INFO, "Handshake Message");
-		break;
-	case TLS_APPLICATION:
-		LOG(INFO, "Application Message");
-		break;
-	case TLS_HEARTBEAT:
-		LOG(INFO, "Heartbeat Message");
-		break;
-	default:
-		break;
-	}
-
-	if (tls_rec->type != TLS_HANDSHAKE) {
-		LOG(INFO, "===PACKET INFO===[DONE]\n");
-		return;
-	}
-	tls_hand = tls_hand_get(pkt);
-	
-	switch (tls_hand->type) {
-	case TLS_HANDSHAKE_CH:
-		LOG(INFO, "Client Hello");
-		break;
-	case TLS_HANDSHAKE_SH:
-		LOG(INFO, "Server Hello");
-		break;
-	case TLS_HANDSHAKE_NST:
-		LOG(INFO, "New Session Ticket");
-		break;
-	case TLS_HANDSHAKE_EE:
-		LOG(INFO, "Encrypted Extensions");
-		break;
-	case TLS_HANDSHAKE_CERT:
-		LOG(INFO, "Certificate");
-		break;
-	case TLS_HANDSHAKE_SKE:
-		LOG(INFO, "Server Key Exchange");
-		break;
-	case TLS_HANDSHAKE_CR:
-		LOG(INFO, "Certificate Request");
-		break;
-	case TLS_HANDSHAKE_SHD:
-		LOG(INFO, "Server Hello Done");
-		break;
-	case TLS_HANDSHAKE_CV:
-		LOG(INFO, "Certificate Verify");
-		break;
-	case TLS_HANDSHAKE_CKE:
-		LOG(INFO, "Client Key Exchange");
-		break;
-	case TLS_HANDSHAKE_FIN:
-		LOG(INFO, "Finished");
-		break;
-	default:
-		break;
-	}
-
-	if (tls_hand->type != TLS_HANDSHAKE_CH) {
-		LOG(INFO, "===PACKET INFO===[DONE]\n");
-		return;
-	}
-	if (pkt->tls_sni) {
-		LOG(INFO, "SNI = [%s]", pkt->tls_sni);
-	}
-
+	tls_log(pkt);
 	LOG(INFO, "===PACKET INFO===[DONE]\n");
 }
 
