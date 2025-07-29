@@ -139,3 +139,29 @@ void tls_sni_get(pkt_t *pkt)
 	return;
 }
 
+/**
+@brief tls_log 함수
+
+주어진 패킷에서 TLS 정보 로깅 
+
+@param pkt pkt_t 구조체
+@return void
+*/
+/*
+void tls_log(pkt_t *pkt)
+{
+	uint16_t 
+	tls_rec_t *tls_rec;
+	tls_hand_t *tls_hand;
+
+	// 패킷에 TLS가 없는 경우 생략 
+	if (pkt->tls_rec_offset == 0) {
+		return;
+	}
+
+	while (
+	tls_rec = tls_rec_get(pkt);
+	LOG(INFO, "[TLS]");
+}
+*/
+

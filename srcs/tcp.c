@@ -55,6 +55,19 @@ uint8_t tcp_hdr_len_get(pkt_t *pkt)
 }
 
 /**
+@brief tcp_data_len_get 함수
+
+주어진 패킷에서 TCP Data 길이 반환
+
+@param pkt pkt_t 구조체
+@return uint8_t TCP Data 길이
+*/
+uint16_t tcp_data_len_get(pkt_t *pkt)
+{
+	return ip_tot_len_get(pkt) - ip_hdr_len_get(pkt) - tcp_hdr_len_get(pkt);
+}
+
+/**
 @brief tcp_checksum_cal 함수
 
 TCP Checksum 값 계산 후 반환
@@ -128,8 +141,7 @@ void tcp_log(pkt_t *pkt)
 		ntohs(tcp->src_port), ntohs(tcp->dst_port), tcp_hdr_len_get(pkt));
 	LOG(INFO, "seq_num = [%u], ack_num = [%u], data_len = [%u], window = [%hu]",
 		ntohl(tcp->seq_num), ntohl(tcp->ack_num),
-		ip_tot_len_get(pkt) - ip_hdr_len_get(pkt) - tcp_hdr_len_get(pkt),
-		ntohs(tcp->window));
+		tcp_data_len_get(pkt), ntohs(tcp->window));
 
 	/* TCP flag 정보 출력 */
 	for (int idx = 0; idx < 8; idx++) {

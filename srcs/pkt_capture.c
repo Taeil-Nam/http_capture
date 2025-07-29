@@ -270,8 +270,10 @@ static int pkt_inspect(pkt_t *pkt)
 		return -1;
 	}
 
-	/* SNI 추출 */
-	tls_sni_get(pkt);
+	/* TLS인 경우 SNI 추출 */
+	if (ntohs(tcp->src_port) == 443 || ntohs(tcp->dst_port) == 443) {
+		tls_sni_get(pkt);
+	}
 
 	return 0;
 }
