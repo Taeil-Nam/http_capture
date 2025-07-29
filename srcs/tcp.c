@@ -8,6 +8,7 @@
 #include <arpa/inet.h>
 #include "tcp.h"
 #include "ip.h"
+#include "log.h"
 
 /*
 ********************************************************************************
@@ -34,6 +35,23 @@ typedef struct pseudo_hdr {
 tcp_hdr_t *tcp_hdr_get(pkt_t *pkt)
 {
 	return (tcp_hdr_t *)(pkt->pkt_data + pkt->tcp_offset);
+}
+
+/**
+@brief tcp_hdr_len_get 함수
+
+주어진 패킷에서 TCP 헤더 길이 반환
+
+@param pkt pkt_t 구조체
+@return uint8_t TCP 헤더 길이
+*/
+uint8_t tcp_hdr_len_get(pkt_t *pkt)
+{
+	tcp_hdr_t * tcp;
+
+	tcp = tcp_hdr_get(pkt);
+
+	return (tcp->off_rsv >> 4) * 4;
 }
 
 /**
@@ -82,5 +100,47 @@ uint16_t tcp_checksum_cal(uint8_t *ip_hdr, uint8_t *tcp, int tcp_len)
 	checksum += (checksum >> 16);
 
 	return htons((uint16_t)(~checksum));
+}
+
+/**
+@brief tcp_log 함수
+
+주어진 패킷에서 TCP 정보 로깅
+
+@param pkt pkt_t 구조체
+@return void
+*/
+void tcp_log(pkt_t *pkt)
+{
+	tcp_hdr_t *tcp;
+	const char *flag_list = "CEUAPRSF";
+	char flags[9];
+	int flag_offset = 0x80;
+
+	/* 패킷에 TCP 헤더가 없는 경우 생략 */
+	if (pkt->tcp_offset == 0) {
+		return;
+	}
+
+	tcp = tcp_hdr_get(pkt);
+	LOG(INFO, "[TCP]");
+	LOG(INFO, "src_port = [%hu], dst_port = [%hu], tcp_size = [%hu]",
+		ntohs(tcp->src_port), ntohs(tcp->dst_port), tcp_hdr_len_get(pkt));
+	LOG(INFO, "seq_num = [%u], ack_num = [%u], data_len = [%u], window = [%hu]",
+		ntohl(tcp->seq_num), ntohl(tcp->ack_num),
+		ip_tot_len_get(pkt) - ip_hdr_len_get(pkt) - tcp_hdr_len_get(pkt),
+		ntohs(tcp->window));
+
+	/* TCP flag 정보 출력 */
+	for (int idx = 0; idx < 8; idx++) {
+        if (tcp->flags & flag_offset) {
+            flags[idx] = flag_list[idx];
+        } else {
+            flags[idx] = '.';
+        }
+        flag_offset = flag_offset >> 1;
+    }
+    flags[8] = '\0';
+    LOG(INFO, "flags = [%s]", flags);
 }
 

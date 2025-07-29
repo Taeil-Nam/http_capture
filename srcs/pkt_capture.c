@@ -380,14 +380,9 @@ static void pkt_tcp_rst_send(pkt_t *pkt)
 */
 static void pkt_info_log(pkt_t *pkt)
 {
-	tcp_hdr_t *tcp;
-	const char *flags = "CEUAPRSF";
-	char tcp_flags[9];
-	int flag_offset = 0x80;
 	tls_rec_t *tls_rec;
 	tls_hand_t *tls_hand;
 
-	tcp = tcp_hdr_get(pkt);
 	LOG(INFO, "===PACKET INFO===[START]");
 
 	/* Ethernet log */
@@ -397,26 +392,7 @@ static void pkt_info_log(pkt_t *pkt)
 	ip_log(pkt);
 
 	/* TCP log */
-	LOG(INFO, "[TCP]");
-	LOG(INFO, "src_port = [%hu], dst_port = [%hu], tcp_size = [%hu]",
-		ntohs(tcp->src_port),
-		ntohs(tcp->dst_port),
-		(tcp->off_rsv >> 4) * 4);
-	LOG(INFO, "seq_num = [%u], ack_num = [%u], data_len = [%u]",
-		ntohl(tcp->seq_num),
-		ntohl(tcp->ack_num),
-		ip_tot_len_get(pkt) - sizeof(ip_hdr_t) - ((tcp->off_rsv >> 4) * 4));
-
-	for (int idx = 0; idx < 8; idx++) {
-		if (tcp->flags & flag_offset) {
-			tcp_flags[idx] = flags[idx];
-		} else {
-			tcp_flags[idx] = '.';
-		}
-		flag_offset = flag_offset >> 1;
-	}
-	tcp_flags[8] = '\0';
-	LOG(INFO, "flags = [%s]", tcp_flags);
+	tcp_log(pkt);
 
 	/* TLS log */
 	if (pkt->tls_rec_offset == 0) {

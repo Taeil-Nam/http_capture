@@ -41,7 +41,9 @@ typedef struct __attribute__((packed)) tcp_hdr {
 ********************************************************************************
 */
 tcp_hdr_t *tcp_hdr_get(pkt_t *pkt);
+uint8_t tcp_hdr_len_get(pkt_t *pkt);
 uint16_t tcp_checksum_cal(uint8_t *ip_hdr, uint8_t *tcp, int tcp_len);
+void tcp_log(pkt_t *pkt);
 
 #endif
 
