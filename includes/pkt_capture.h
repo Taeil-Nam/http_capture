@@ -31,10 +31,7 @@ typedef struct pkt {
 
 	uint16_t ip_offset;
 	uint16_t tcp_offset;
-	uint16_t tls_rec_offset;
-	uint16_t tls_hand_offset;
-	uint16_t tls_ch_offset;
-	uint32_t tls_ext_offset;
+	uint16_t tcp_data_offset;
 
 	const char *tls_sni;
 } pkt_t;

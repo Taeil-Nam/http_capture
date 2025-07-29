@@ -229,7 +229,6 @@ static int pkt_inspect(pkt_t *pkt)
 	if (eth->type != htons(ETH_P_IP)) {
 		return -1;
 	}
-
 	ip = ip_hdr_get(pkt);
 	pkt->tcp_offset = pkt->ip_offset + ((ip->ver_ihl & 0x0F) * 4);
 	if (!inet_ntop(AF_INET, &ip->src_ip, src_ip_str, INET_ADDRSTRLEN)) {
@@ -250,11 +249,7 @@ static int pkt_inspect(pkt_t *pkt)
 	if (ip->protocol != IPPROTO_TCP) {
 		return -1;
 	}
-
 	tcp = tcp_hdr_get(pkt);
-	if (tcp_data_len_get(pkt) >= 5) {
-		pkt->tls_rec_offset = pkt->tcp_offset + tcp_hdr_len_get(pkt);
-	}
 
 	/* Port 번호 필터링 */
 	if (ntohs(tcp->src_port) != target_port &&
@@ -270,6 +265,9 @@ static int pkt_inspect(pkt_t *pkt)
 
 	/* TLS인 경우 SNI 추출 */
 	if (ntohs(tcp->src_port) == 443 || ntohs(tcp->dst_port) == 443) {
+		if (tcp_data_len_get(pkt) >= 5) {
+			pkt->tcp_data_offset = pkt->tcp_offset + tcp_hdr_len_get(pkt);
+		}
 		tls_sni_get(pkt);
 	}
 

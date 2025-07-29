@@ -79,8 +79,8 @@ typedef struct __attribute__((packed)) tls_ext_sn {
 * PROTOTYPES
 ********************************************************************************
 */
-tls_rec_t *tls_rec_get(pkt_t *pkt);
-tls_hand_t *tls_hand_get(pkt_t *pkt);
+tls_rec_t *tls_rec_get(pkt_t *pkt, uint16_t offset);
+tls_hand_t *tls_hand_get(pkt_t *pkt, uint16_t offset);
 void tls_sni_get(pkt_t *pkt);
 void tls_log(pkt_t *pkt);
 

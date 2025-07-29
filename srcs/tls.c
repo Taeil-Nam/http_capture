@@ -24,11 +24,12 @@ static void tls_hand_log(uint8_t type);
 주어진 패킷에서 TLS record 헤더 반환
 
 @param pkt pkt_t 구조체
+@param offset tls record offset
 @return tls_rec_t * tls record 헤더 반환
 */
-tls_rec_t *tls_rec_get(pkt_t *pkt)
+tls_rec_t *tls_rec_get(pkt_t *pkt, uint16_t offset)
 {
-	return (tls_rec_t *)(pkt->pkt_data + pkt->tls_rec_offset);
+	return (tls_rec_t *)(pkt->pkt_data + offset);
 }
 
 /**
@@ -37,11 +38,12 @@ tls_rec_t *tls_rec_get(pkt_t *pkt)
 주어진 패킷에서 TLS handshake 헤더 반환
 
 @param pkt pkt_t 구조체
+@param offset tls handshake offset
 @return tls_hand_t * tls handshake 헤더 반환
 */
-tls_hand_t *tls_hand_get(pkt_t *pkt)
+tls_hand_t *tls_hand_get(pkt_t *pkt, uint16_t offset)
 {
-	return (tls_hand_t *)(pkt->pkt_data + pkt->tls_hand_offset);
+	return (tls_hand_t *)(pkt->pkt_data + offset);
 }
 
 /**
@@ -58,7 +60,10 @@ void tls_sni_get(pkt_t *pkt)
 {
 	tls_rec_t *tls_rec;
 	tls_hand_t *tls_hand;
-	const uint8_t *cur_ch_offset;
+	uint16_t tls_hand_offset;
+	uint32_t ch_offset;
+	uint32_t ext_offset;
+	const uint8_t *cur_ch;
 	uint32_t ch_len;
 	uint8_t sid_len;
 	uint16_t cip_suite_len;
@@ -69,20 +74,20 @@ void tls_sni_get(pkt_t *pkt)
 
 	pkt->tls_sni = NULL;
 
-	if (pkt->tls_rec_offset == 0) {
+	if (pkt->tcp_data_offset == 0) {
 		return;
 	}
 
 	/* TLS Record 파싱 */
-	tls_rec = tls_rec_get(pkt);
-	pkt->tls_hand_offset = pkt->tls_rec_offset + sizeof(tls_rec_t);
+	tls_rec = tls_rec_get(pkt, pkt->tcp_data_offset);
+	tls_hand_offset = pkt->tcp_data_offset + sizeof(tls_rec_t);
 	if (tls_rec->type != TLS_HANDSHAKE) {
 		return;
 	}
 
 	/* TLS Handshake 파싱 */
-	tls_hand = tls_hand_get(pkt);
-	pkt->tls_ch_offset = pkt->tls_hand_offset + sizeof(tls_hand_t);
+	tls_hand = tls_hand_get(pkt, tls_hand_offset);
+	ch_offset = tls_hand_offset + sizeof(tls_hand_t);
 	ch_len = 0;
 	ch_len = (tls_hand->len[0] << 16) |
 			(tls_hand->len[1] << 8) |
@@ -92,55 +97,55 @@ void tls_sni_get(pkt_t *pkt)
 	}
 
 	/* TLS Client Hello 파싱 */
-	cur_ch_offset = pkt->pkt_data + pkt->tls_ch_offset;
-	pkt->tls_ext_offset = pkt->tls_ch_offset;
+	cur_ch = pkt->pkt_data + ch_offset;
+	ext_offset = ch_offset;
 
 	/* version */
-	cur_ch_offset += CH_VERSION_FIELD;
-	pkt->tls_ext_offset += CH_VERSION_FIELD;
+	cur_ch += CH_VERSION_FIELD;
+	ext_offset += CH_VERSION_FIELD;
 
 	/* random */
-	cur_ch_offset += CH_RANDOM_FIELD;
-	pkt->tls_ext_offset += CH_RANDOM_FIELD;
+	cur_ch += CH_RANDOM_FIELD;
+	ext_offset += CH_RANDOM_FIELD;
 
 	/* Session id */
-	sid_len = *(uint8_t *)cur_ch_offset;
-	cur_ch_offset += CH_SID_FIELD + sid_len;
-	pkt->tls_ext_offset += CH_SID_FIELD + sid_len;
+	sid_len = *(uint8_t *)cur_ch;
+	cur_ch += CH_SID_FIELD + sid_len;
+	ext_offset += CH_SID_FIELD + sid_len;
 
 	/* Cypher Suite */
-	cip_suite_len = ntohs(*(uint16_t *)cur_ch_offset);
-	cur_ch_offset += CH_CIP_SUITE_FIELD + cip_suite_len;
-	pkt->tls_ext_offset += CH_CIP_SUITE_FIELD + cip_suite_len;
+	cip_suite_len = ntohs(*(uint16_t *)cur_ch);
+	cur_ch += CH_CIP_SUITE_FIELD + cip_suite_len;
+	ext_offset += CH_CIP_SUITE_FIELD + cip_suite_len;
 
 	/* Compression Method */
-	comp_len = *(uint8_t *)cur_ch_offset;
-	cur_ch_offset += CH_COMP_FIELD + comp_len;
-	pkt->tls_ext_offset += CH_COMP_FIELD + comp_len;
+	comp_len = *(uint8_t *)cur_ch;
+	cur_ch += CH_COMP_FIELD + comp_len;
+	ext_offset += CH_COMP_FIELD + comp_len;
 
 	/* Extension이 없는 경우 */
-	if (ch_len == pkt->tls_ext_offset) {
+	if (ch_len == ext_offset - ch_offset) {
 		return;
 	}
 
 	/* Extension */
-	ext_len = ntohs(*(uint16_t *)cur_ch_offset);
-	cur_ch_offset += CH_EXTENSION_FIELD;
+	ext_len = ntohs(*(uint16_t *)cur_ch);
+	cur_ch += CH_EXTENSION_FIELD;
 
 	/* Extension 목록 중 SNI 찾아서 반환 */
 	while (ext_len > 0) {
-		cur_ext = (tls_ext_t *)cur_ch_offset;
+		cur_ext = (tls_ext_t *)cur_ch;
 
 		/* server_name extension */
 		if (ntohs(cur_ext->type) == TLS_EXT_SN) {
-			cur_ch_offset += sizeof(tls_ext_t);
-			ext_sn = (tls_ext_sn_t *)cur_ch_offset;
-			cur_ch_offset += sizeof(tls_ext_sn_t);
+			cur_ch += sizeof(tls_ext_t);
+			ext_sn = (tls_ext_sn_t *)cur_ch;
+			cur_ch += sizeof(tls_ext_sn_t);
 			pkt->tls_sni =
-				strndup((const char *)cur_ch_offset, ext_sn->sni_len);
+				strndup((const char *)cur_ch, ntohs(ext_sn->sni_len));
 			return;
 		}
-		cur_ch_offset += sizeof(tls_ext_t) + ntohs(cur_ext->len);
+		cur_ch += sizeof(tls_ext_t) + ntohs(cur_ext->len);
 		ext_len -= sizeof(tls_ext_t) + ntohs(cur_ext->len);
 	}
 
@@ -163,12 +168,12 @@ void tls_log(pkt_t *pkt)
 	tls_hand_t *tls_hand;
 
 	/* 패킷에 TLS가 없는 경우 생략  */
-	if (pkt->tls_rec_offset == 0) {
+	if (pkt->tcp_data_offset == 0) {
 		return;
 	}
 
 	tcp_data_len = tcp_data_len_get(pkt);
-	tls_rec_offset = pkt->tls_rec_offset;
+	tls_rec_offset = pkt->tcp_data_offset;
 
 	do {
 		tls_rec = (tls_rec_t *)(pkt->pkt_data + tls_rec_offset);
@@ -206,7 +211,7 @@ void tls_log(pkt_t *pkt)
 		tls_rec_offset += sizeof(tls_rec_t) + ntohs(tls_rec->len);
 
 	} while (tls_rec_offset + sizeof(tls_rec_t) <
-			pkt->tls_rec_offset + tcp_data_len);
+			pkt->tcp_data_offset + tcp_data_len);
 }
 
 /**
