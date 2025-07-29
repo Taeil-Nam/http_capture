@@ -380,9 +380,6 @@ static void pkt_tcp_rst_send(pkt_t *pkt)
 */
 static void pkt_info_log(pkt_t *pkt)
 {
-	ip_hdr_t *ip;
-	char src_ip_str[INET_ADDRSTRLEN];
-	char dst_ip_str[INET_ADDRSTRLEN];
 	tcp_hdr_t *tcp;
 	const char *flags = "CEUAPRSF";
 	char tcp_flags[9];
@@ -390,29 +387,14 @@ static void pkt_info_log(pkt_t *pkt)
 	tls_rec_t *tls_rec;
 	tls_hand_t *tls_hand;
 
-	ip = ip_hdr_get(pkt);
 	tcp = tcp_hdr_get(pkt);
-	if (!inet_ntop(AF_INET, &ip->src_ip, src_ip_str, INET_ADDRSTRLEN)) {
-		LOG(ERR, "%s", strerror(errno));
-		return;
-	}
-	if (!inet_ntop(AF_INET, &ip->dst_ip, dst_ip_str, INET_ADDRSTRLEN)) {
-		LOG(ERR, "%s", strerror(errno));
-		return;
-	}
-
 	LOG(INFO, "===PACKET INFO===[START]");
 
 	/* Ethernet log */
 	eth_log(pkt);
 
 	/* IP log */
-	LOG(INFO, "[IP]");
-	LOG(INFO, "src_ip = [%s], dst_ip = [%s], protocol = [%hu], ip_size = [%u]",
-		src_ip_str,
-		dst_ip_str,
-		ip->protocol,
-		(ip->ver_ihl & 0x0F) * 4);
+	ip_log(pkt);
 
 	/* TCP log */
 	LOG(INFO, "[TCP]");
@@ -423,7 +405,7 @@ static void pkt_info_log(pkt_t *pkt)
 	LOG(INFO, "seq_num = [%u], ack_num = [%u], data_len = [%u]",
 		ntohl(tcp->seq_num),
 		ntohl(tcp->ack_num),
-		ntohs(ip->tot_len) - sizeof(ip_hdr_t) - ((tcp->off_rsv >> 4) * 4));
+		ip_tot_len_get(pkt) - sizeof(ip_hdr_t) - ((tcp->off_rsv >> 4) * 4));
 
 	for (int idx = 0; idx < 8; idx++) {
 		if (tcp->flags & flag_offset) {

@@ -6,7 +6,10 @@
 */
 
 #include <arpa/inet.h>
+#include <errno.h>
+#include <string.h>
 #include "ip.h"
+#include "log.h"
 
 /**
 @brief ip_hdr_get 함수
@@ -19,6 +22,40 @@
 ip_hdr_t *ip_hdr_get(pkt_t *pkt)
 {
 	return (ip_hdr_t *)(pkt->pkt_data + pkt->ip_offset);
+}
+
+/**
+@brief ip_hdr_len_get 함수
+
+주어진 패킷에서 IP 헤더의 길이 반환
+
+@param pkt pkt_t 구조체
+@return uint8_t IP 헤더의 길이
+*/
+uint8_t ip_hdr_len_get(pkt_t *pkt)
+{
+	ip_hdr_t *ip;
+
+	ip = ip_hdr_get(pkt);
+
+	return (ip->ver_ihl & 0x0F) * 4;
+}
+
+/**
+@brief ip_tot_len_get 함수
+
+주어진 패킷에서 IP 패킷의 길이 반환
+
+@param pkt pkt_t 구조체
+@return uint16_t IP 패킷의 길이
+*/
+uint16_t ip_tot_len_get(pkt_t *pkt)
+{
+	ip_hdr_t *ip;
+
+	ip = ip_hdr_get(pkt);
+
+	return ntohs(ip->tot_len);
 }
 
 /**
@@ -48,5 +85,40 @@ uint16_t ip_checksum_cal(uint8_t *ip_hdr, int hdr_len)
     checksum += (checksum >> 16);
 
     return htons((uint16_t)(~checksum));
+}
+
+/**
+@brief ip_log 함수
+
+주어진 패킷에서 IP 정보 로깅
+
+@param pkt pkt_t 구조체
+@return void
+*/
+void ip_log(pkt_t *pkt)
+{
+	ip_hdr_t *ip;
+	char src_ip_str[INET_ADDRSTRLEN];
+	char dst_ip_str[INET_ADDRSTRLEN];
+
+	/* 패킷에 IP 헤더가 없으면 생략 */
+	if (pkt->ip_offset == 0) {
+		return;
+	}
+
+	ip = ip_hdr_get(pkt);
+
+	/* IP 주소 변환 실패시 생략 */
+	if (!inet_ntop(AF_INET, &ip->src_ip, src_ip_str, INET_ADDRSTRLEN)) {
+		LOG(ERR, "%s", strerror(errno));
+		return;
+	} else if (!inet_ntop(AF_INET, &ip->dst_ip, dst_ip_str, INET_ADDRSTRLEN)) {
+		LOG(ERR, "%s", strerror(errno));
+		return;
+	}
+
+	LOG(INFO, "[IP]");
+	LOG(INFO, "src_ip = [%s], dst_ip = [%s], protocol = [%hu], ip_size = [%u]",
+		src_ip_str, dst_ip_str, ip->protocol, ip_hdr_len_get(pkt));
 }
 

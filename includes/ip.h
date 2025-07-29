@@ -35,7 +35,10 @@ typedef struct  __attribute__((packed)) ip_hdr {
 ********************************************************************************
 */
 ip_hdr_t *ip_hdr_get(pkt_t *pkt);
+uint8_t ip_hdr_len_get(pkt_t *pkt);
+uint16_t ip_tot_len_get(pkt_t *pkt);
 uint16_t ip_checksum_cal(uint8_t *ip_hdr, int hdr_len);
+void ip_log(pkt_t *pkt);
 
 #endif
 
