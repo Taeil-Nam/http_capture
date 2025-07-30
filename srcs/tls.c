@@ -2,7 +2,7 @@
 @file tls.c
 @author 남태일(taeil.nam@monitorapp.com)
 @date 2025-07-22
-@brief TLS 로직 관련 코드
+@brief tls 로직 관련 코드
 */
 
 #include <arpa/inet.h>
@@ -21,11 +21,11 @@ static void tls_hand_log(uint8_t type);
 /**
 @brief tls_rec_get 함수
 
-주어진 패킷에서 TLS record 헤더 반환
+주어진 패킷의 tls record 헤더 반환
 
 @param pkt pkt_t 구조체
 @param offset tls record offset
-@return tls_rec_t * tls record 헤더 반환
+@return tls record 헤더 반환
 */
 tls_rec_t *tls_rec_get(pkt_t *pkt, uint16_t offset)
 {
@@ -35,11 +35,11 @@ tls_rec_t *tls_rec_get(pkt_t *pkt, uint16_t offset)
 /**
 @brief tls_hand_get 함수
 
-주어진 패킷에서 TLS handshake 헤더 반환
+주어진 패킷에서 tls handshake 헤더 반환
 
 @param pkt pkt_t 구조체
 @param offset tls handshake offset
-@return tls_hand_t * tls handshake 헤더 반환
+@return tls handshake 헤더 반환
 */
 tls_hand_t *tls_hand_get(pkt_t *pkt, uint16_t offset)
 {
@@ -49,9 +49,9 @@ tls_hand_t *tls_hand_get(pkt_t *pkt, uint16_t offset)
 /**
 @brief tls_sni_get 함수
 
-TLS Client Hello 메시지의 sni 값 추출
-SNI가 있는 경우 pkt->tls_sni에 SNI 값 저장
-SNI가 없는 경우 pkt->tls_sni에 NULL 저장
+tls client hello 메시지의 sni 값 추출
+sni가 있는 경우 pkt->tls_sni에 sni 값 저장
+sni가 없는 경우 pkt->tls_sni에 null 저장
 
 @param pkt 패킷 데이터
 @return void
@@ -73,19 +73,16 @@ void tls_sni_get(pkt_t *pkt)
 	tls_ext_sn_t *ext_sn;
 
 	pkt->tls_sni = NULL;
-
 	if (pkt->tcp_data_offset == 0) {
 		return;
 	}
-
-	/* TLS Record 파싱 */
+	/* tls record 파싱 */
 	tls_rec = tls_rec_get(pkt, pkt->tcp_data_offset);
 	tls_hand_offset = pkt->tcp_data_offset + sizeof(tls_rec_t);
 	if (tls_rec->type != TLS_HANDSHAKE) {
 		return;
 	}
-
-	/* TLS Handshake 파싱 */
+	/* tls handshake 파싱 */
 	tls_hand = tls_hand_get(pkt, tls_hand_offset);
 	ch_offset = tls_hand_offset + sizeof(tls_hand_t);
 	ch_len = 0;
@@ -95,47 +92,37 @@ void tls_sni_get(pkt_t *pkt)
 	if (tls_hand->type != TLS_HANDSHAKE_CH) {
 		return;
 	}
-
-	/* TLS Client Hello 파싱 */
+	/* tls client hello 파싱 */
 	cur_ch = pkt->pkt_data + ch_offset;
 	ext_offset = ch_offset;
-
 	/* version */
 	cur_ch += CH_VERSION_FIELD;
 	ext_offset += CH_VERSION_FIELD;
-
 	/* random */
 	cur_ch += CH_RANDOM_FIELD;
 	ext_offset += CH_RANDOM_FIELD;
-
-	/* Session id */
+	/* session id */
 	sid_len = *(uint8_t *)cur_ch;
 	cur_ch += CH_SID_FIELD + sid_len;
 	ext_offset += CH_SID_FIELD + sid_len;
-
-	/* Cypher Suite */
+	/* cypher suite */
 	cip_suite_len = ntohs(*(uint16_t *)cur_ch);
 	cur_ch += CH_CIP_SUITE_FIELD + cip_suite_len;
 	ext_offset += CH_CIP_SUITE_FIELD + cip_suite_len;
-
-	/* Compression Method */
+	/* compression method */
 	comp_len = *(uint8_t *)cur_ch;
 	cur_ch += CH_COMP_FIELD + comp_len;
 	ext_offset += CH_COMP_FIELD + comp_len;
-
-	/* Extension이 없는 경우 */
+	/* extension이 없는 경우 */
 	if (ch_len == ext_offset - ch_offset) {
 		return;
 	}
-
-	/* Extension */
+	/* extension */
 	ext_len = ntohs(*(uint16_t *)cur_ch);
 	cur_ch += CH_EXTENSION_FIELD;
-
-	/* Extension 목록 중 SNI 찾아서 반환 */
+	/* extension 목록 중 sni 찾아서 반환 */
 	while (ext_len > 0) {
 		cur_ext = (tls_ext_t *)cur_ch;
-
 		/* server_name extension */
 		if (ntohs(cur_ext->type) == TLS_EXT_SN) {
 			cur_ch += sizeof(tls_ext_t);
@@ -148,14 +135,12 @@ void tls_sni_get(pkt_t *pkt)
 		cur_ch += sizeof(tls_ext_t) + ntohs(cur_ext->len);
 		ext_len -= sizeof(tls_ext_t) + ntohs(cur_ext->len);
 	}
-
-	return;
 }
 
 /**
 @brief tls_log 함수
 
-주어진 패킷에서 TLS 정보 로깅
+주어진 패킷에서 tls 정보 로깅
 
 @param pkt pkt_t 구조체
 @return void
@@ -167,17 +152,13 @@ void tls_log(pkt_t *pkt)
 	tls_rec_t *tls_rec;
 	tls_hand_t *tls_hand;
 
-	/* 패킷에 TLS가 없는 경우 생략  */
 	if (pkt->tcp_data_offset == 0) {
 		return;
 	}
-
 	tcp_data_len = tcp_data_len_get(pkt);
 	tls_rec_offset = pkt->tcp_data_offset;
-
 	do {
 		tls_rec = (tls_rec_t *)(pkt->pkt_data + tls_rec_offset);
-
 		switch (tls_rec->type) {
 		case TLS_CCS:
 			LOG(INFO, "[TLS]");
@@ -217,9 +198,9 @@ void tls_log(pkt_t *pkt)
 /**
 @brief tls_hand_log 정적 함수
 
-주어진 TLS Handskahe 타입에 맞는 로그 출력
+주어진 tls handskahe 타입에 맞는 로그 출력
 
-@param type TLS Handshake 타입
+@param type tls handshake 타입
 @return void
 */
 static void tls_hand_log(uint8_t type)

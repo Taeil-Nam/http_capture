@@ -16,24 +16,27 @@
 ********************************************************************************
 */
 #define MAX_PKT_CNTS 1000000 /**< 캡처 가능한 최대 패킷 개수 */
-#define NET_IF_MAC 0x000c295de2b0ULL /**< 네트워크 인터페이스의 MAC 주소 */
-#define NET_IF_IP 0xc0a8000a /**< 네트워크 인터페이스의 IP 주소 */
-#define GATEWAY_MAC 0x005056e8707fULL /**< Gateway의 MAC 주소 */
+#define NET_IF_MAC 0x000c295de2b0ULL /**< 네트워크 인터페이스의 mac 주소 */
+#define NET_IF_IP 0xc0a8000aU /**< 네트워크 인터페이스의 ip 주소 */
+#define GATEWAY_MAC 0x005056e8707fULL /**< gateway의 mac 주소 */
 
 /*
 ********************************************************************************
 * DATATYPES
 ********************************************************************************
 */
+/**
+@brief 캡처된 패킷의 정보를 가지고 있는 구조체
+*/
 typedef struct pkt {
-	struct pcap_pkthdr *pkt_hdr;
-	const u_char *pkt_data;
+	struct pcap_pkthdr *pkt_hdr; /**< pcap으로 캡처된 패킷의 정보 */
+	const u_char *pkt_data; /**< pcap으로 캡처된 패킷의 실제 데이터 */
 
-	uint16_t ip_offset;
-	uint16_t tcp_offset;
-	uint16_t tcp_data_offset;
+	uint16_t ip_offset; /**< pkt_data에서 ip header가 시작되는 지점 */
+	uint16_t tcp_offset; /**< pkt_data에서 tcp header가 시작되는 지점 */
+	uint16_t tcp_data_offset; /**< pkt_data에서 tcp data가 시작되는 지점 */
 
-	const char *tls_sni;
+	const char *tls_sni; /**< tls client hello의 sni */
 } pkt_t;
 
 /*

@@ -16,9 +16,9 @@
 * CONSTANTS 
 ********************************************************************************
 */
-#define INFO "INFO"
-#define WARN "WARNING"
-#define ERR "ERROR"
+#define INFO "INFO" /**< log level = information */
+#define WARN "WARNING" /**< log level = warning */
+#define ERR "ERROR"/**< log level = error */
 
 /*
 ********************************************************************************

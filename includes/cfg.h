@@ -22,14 +22,13 @@
 #define MAX_CFG_LEN 1024 /**< conf 파일 각 설정의 최대 길이 */
 #define CFG_INTERVAL 10 /**< conf 파일 갱신 유무 확인 간격(초) */
 
-/* 필수 설정 KEY 값 */
-#define CFG_NET_IF_NAME "net_if_name"
-#define CFG_PKT_CNTS "pkt_cnts"
-#define CFG_TARGET_IP "target_ip"
-#define CFG_TARGET_PORT "target_port"
-#define CFG_LOG_FILE "log_file"
-#define CFG_DUMP_FILE "dump_file"
-#define CFG_SNI_RST "sni_rst"
+#define CFG_NET_IF_NAME "net_if_name" /**< 네트워크 인터페이스 설정 key 값 */
+#define CFG_PKT_CNTS "pkt_cnts" /**< 패킷 개수 설정 key 값 */
+#define CFG_TARGET_IP "target_ip" /**< ip 필터링 설정 key 값 */
+#define CFG_TARGET_PORT "target_port" /**< port number 필터링 설정 key 값 */
+#define CFG_LOG_FILE "log_file" /**< log 파일 설정 key 값 */
+#define CFG_DUMP_FILE "dump_file" /**< dump 파일 설정 key 값 */
+#define CFG_SNI_RST "sni_rst" /**< sni로 rst 패킷 전송 설정 key 값 */
 
 /*
 ********************************************************************************

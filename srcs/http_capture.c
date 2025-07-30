@@ -9,7 +9,7 @@
 @mainpage http 패킷 캡처 프로그램
 
 @section intro
-이 프로젝트는 간단한 http 패킷 캡처 프로그램 예제이다.
+이 프로젝트는 간단한 http 패킷 캡처 프로그램 예제이다
 
 @section developer
 남태일(taeil.nam@monitorapp.com)
@@ -58,7 +58,6 @@ int main(void)
 	init();
 	run();
 	cleanup();
-
 	return 0;
 }
 
@@ -74,14 +73,11 @@ static void init(void)
 {
 	/* 데몬 프로세스로 변환 */
 	process_demonize();
-
 	/* syslog 시작 */
 	openlog(NULL, LOG_PID | LOG_NDELAY, LOG_DAEMON);
 	syslog(LOG_INFO, "daemon started.");
-
 	/* conf 설정 적용 */
 	cfg_apply();
-
 	/* 패킷 캡처 관련 설정 */
 	if (pkt_capture_setup() == -1) {
 		syslog(LOG_INFO, "daemon terminated.");
@@ -92,9 +88,10 @@ static void init(void)
 /**
 @brief run 정적 함수
 
-프로그램 main 로직
-실시간으로 패킷 캡처
-CFG_INTERVAL 마다 conf 수정 유무 확인 후, 수정된 설정 적용 후 다시 캡처
+프로그램의 main 로직을 수행
+실시간으로 패킷 캡처(Non-blocking)
+CFG_INTERVAL 마다 conf 파일 수정 유무 확인
+conf 파일 수정 시, 수정된 설정 적용 후 다시 캡처
 
 @param void
 @return void
@@ -107,22 +104,15 @@ static void run(void)
 	syslog(LOG_INFO, "Packet capture...[START]");
 	clock_gettime(CLOCK_MONOTONIC, &start_time);
 	while (true) {
-
 		/* 패킷 캡처 */
 		if (pkt_capture() == -1) {
 			break;
 		}
-	
 		clock_gettime(CLOCK_MONOTONIC, &cur_time);
 		elapsed_time = cur_time.tv_sec - start_time.tv_sec;
-		
 		/* CFG_INTERVAL 마다 conf 수정 유무 확인 */
 		if (elapsed_time >= CFG_INTERVAL) {
-
-			/* conf 파일 수정시 */
 			if (cfg_file_is_modified()) {
-
-				/* 변경된 설정으로 재설정 */
 				syslog(LOG_INFO, "Packet capture...[DONE]");
 				syslog(LOG_INFO, "Contiguration file modified.");
 				cfg_apply();
@@ -175,16 +165,13 @@ static void process_demonize(void)
 	} else if (pid > 0) {
 		exit(EXIT_SUCCESS);
 	}
-
 	/* 터미널과 분리 */
 	if (setsid() < 0) {
 		exit(EXIT_FAILURE);
 	}
-
 	/* 시그널 무시 */
 	signal(SIGCHLD, SIG_IGN);
 	signal(SIGHUP, SIG_IGN);
-
 	/* 터미널 분리 보장 */
 	pid = fork();
 	if (pid < 0) {
@@ -192,13 +179,10 @@ static void process_demonize(void)
 	} else if (pid > 0) {
 		exit(EXIT_SUCCESS);
 	}
-
 	/* 기본 파일 생성 권한 설정 */
 	umask(0);
-
 	/* 작업 디렉토리 변경 */
 	chdir("/");
-
 	/* 모든 fd close */
 	for (int fd = sysconf(_SC_OPEN_MAX); fd >= 0; fd--) {
 		close(fd);
