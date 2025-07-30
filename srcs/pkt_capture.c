@@ -95,7 +95,7 @@ int pkt_capture_setup(void)
 	/* dump 파일 생성 */
 	if (cfg_dump_is_used()) {
 		syslog(LOG_INFO, "Creating dump file...[START]");
-		dumper = pcap_dump_open(pcap_handle, CFG_DUMP_FILE_PATH);
+		dumper = pcap_dump_open_append(pcap_handle, CFG_DUMP_FILE_PATH);
 		if (!dumper) {
 			syslog(LOG_ERR, "%s", pcap_geterr(pcap_handle));
 		} else {
