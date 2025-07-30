@@ -86,7 +86,7 @@ uint16_t ip_checksum_cal(uint8_t *ip_hdr, int hdr_len)
 /**
 @brief ip_log 함수
 
-주어진 패킷의 ip 정보를 로그에 출력
+주어진 패킷의 ip 정보를 log로 출력
 
 @param pkt pkt_t 구조체
 @return void

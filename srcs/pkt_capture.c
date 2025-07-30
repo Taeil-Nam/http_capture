@@ -245,15 +245,16 @@ static int pkt_inspect(pkt_t *pkt)
 /**
 @brief pkt_tcp_rst_send 정적 함수
 
-tcp rst 패킷을 주어진 sni로 전송
+주어진 tls client hello 패킷에 대한 tcp rst 패킷 전송
 
-@param pkt client hello 패킷
+@param pkt tls client hello 패킷
 @return void
 */
 static void pkt_tcp_rst_send(pkt_t *pkt)
 {
 	uint8_t send_pkt[60];
 	eth_hdr_t *eth;
+	eth_hdr_t *eth_prev;
 	ip_hdr_t *ip;
 	ip_hdr_t *ip_prev;
 	tcp_hdr_t *tcp;
@@ -262,36 +263,25 @@ static void pkt_tcp_rst_send(pkt_t *pkt)
 	pkt_t tcp_rst;
 
 	memset(&send_pkt, 0, sizeof(send_pkt));
+	eth_prev = (eth_hdr_t *)(pkt->pkt_data);
 	ip_prev = (ip_hdr_t *)(pkt->pkt_data + pkt->ip_offset);
 	tcp_prev = (tcp_hdr_t *)(pkt->pkt_data + pkt->tcp_offset);
 
 	/* ethernet 헤더 설정 */
 	eth = (eth_hdr_t *)send_pkt;
-	eth->dst_mac[0] = (GATEWAY_MAC >> 40) & 0xff;
-	eth->dst_mac[1] = (GATEWAY_MAC >> 32) & 0xff;
-	eth->dst_mac[2] = (GATEWAY_MAC >> 24) & 0xff;
-	eth->dst_mac[3] = (GATEWAY_MAC >> 16) & 0xff;
-	eth->dst_mac[4] = (GATEWAY_MAC >> 8) & 0xff;
-	eth->dst_mac[5] = GATEWAY_MAC & 0xff;
-	eth->src_mac[0] = (NET_IF_MAC >> 40) & 0xff;
-	eth->src_mac[1] = (NET_IF_MAC >> 32) & 0xff;
-	eth->src_mac[2] = (NET_IF_MAC >> 24) & 0xff;
-	eth->src_mac[3] = (NET_IF_MAC >> 16) & 0xff;
-	eth->src_mac[4] = (NET_IF_MAC >> 8) & 0xff;
-	eth->src_mac[5] = NET_IF_MAC & 0xff;
+	memcpy(eth->dst_mac, eth_prev->dst_mac, MAC_LEN);
+	memcpy(eth->src_mac, eth_prev->src_mac, MAC_LEN);
 	eth->type = htons(ETH_P_IP);
-
 	/* ip 헤더 설정 */
 	ip = (ip_hdr_t *)(send_pkt + sizeof(eth_hdr_t));
 	ip->ver_ihl = 0x45;
 	ip->tot_len = htons(0x0028);
 	ip->frag_offset = htons(0x4000);
 	ip->ttl = 64;
-	ip->protocol = 6;
-	ip->src_ip = htonl(NET_IF_IP);
+	ip->protocol = IPPROTO_TCP;
+	ip->src_ip = ip_prev->src_ip;
 	ip->dst_ip = ip_prev->dst_ip;
 	ip->checksum = ip_checksum_cal((uint8_t *)ip, sizeof(ip_hdr_t));
-
 	/* tcp 헤더 설정 */
 	tcp = (tcp_hdr_t *)(send_pkt + sizeof(eth_hdr_t) + sizeof(ip_hdr_t));
 	if (tcp_prev->src_port == htons(443)) {
@@ -300,10 +290,7 @@ static void pkt_tcp_rst_send(pkt_t *pkt)
 		tcp->src_port = tcp_prev->src_port;
 	}
 	tcp->dst_port = htons(443);
-	tcp->seq_num = htonl(ntohl(tcp_prev->seq_num) +
-			ntohs(ip_prev->tot_len) -
-			sizeof(ip_hdr_t) -
-			((tcp_prev->off_rsv >> 4) * 4));
+	tcp->seq_num = htonl(ntohl(tcp_prev->seq_num) + tcp_data_len_get(pkt));
 	tcp->ack_num = 0;
 	tcp->off_rsv = 0x50;
 	tcp->flags = 0x04;
@@ -311,17 +298,17 @@ static void pkt_tcp_rst_send(pkt_t *pkt)
 	tcp->urg_ptr = 0;
 	tcp->checksum = tcp_checksum_cal((uint8_t *)ip, (uint8_t *)tcp,
 			ntohs(ip->tot_len) - sizeof(ip_hdr_t));
-
 	/* 패킷 전송 */
 	retval = pcap_inject(pcap_handle, send_pkt, sizeof(send_pkt));
 	if (retval == PCAP_ERROR) {
-		LOG(ERR, "Error send tcp_rst : %s", pcap_geterr(pcap_handle));
+		LOG(ERR, "Error sending tcp_rst : %s", pcap_geterr(pcap_handle));
+		return;
 	} else if (retval == 0) {
-		LOG(ERR, "Error send tcp_rst : sent packet size = 0");
+		LOG(ERR, "Error sending tcp_rst : sent packet size = 0");
+		return;
 	}
-
-	/* 패킷 전송 log 생성 */
-	LOG(INFO, "=====Sent TCP_rst packet=====");
+	/* 패킷 전송 log 출력 */
+	LOG(INFO, "=====SENT TCP RST PACKET=====[START]");
 	memset(&tcp_rst, 0, sizeof(pkt_t));
 	tcp_rst.pkt_data = (const u_char *)(&send_pkt);
 	tcp_rst.ip_offset = sizeof(eth_hdr_t);
@@ -332,7 +319,7 @@ static void pkt_tcp_rst_send(pkt_t *pkt)
 /**
 @brief pkt_info_log 정적 함수
 
-필터링된 패킷의 정보를 로그에 출력
+필터링된 패킷의 정보를 log로 출력
 
 @param pkt 캡처된 패킷
 @return void

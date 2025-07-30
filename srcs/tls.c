@@ -198,7 +198,7 @@ void tls_log(pkt_t *pkt)
 /**
 @brief tls_hand_log 정적 함수
 
-주어진 tls handskahe 타입에 맞는 로그 출력
+주어진 tls handskahe 타입에 맞는 log 출력
 
 @param type tls handshake 타입
 @return void

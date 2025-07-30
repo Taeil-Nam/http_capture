@@ -24,7 +24,7 @@ eth_hdr_t *eth_hdr_get(pkt_t *pkt)
 /**
 @brief eth_log 함수
 
-주어진 패킷의 ethernet 정보를 로그에 출력
+주어진 패킷의 ethernet 정보를 log로 출력
 
 @param pkt pkt_t 구조체
 @return void

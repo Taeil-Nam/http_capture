@@ -115,7 +115,7 @@ uint16_t tcp_checksum_cal(uint8_t *ip_hdr, uint8_t *tcp, int tcp_len)
 /**
 @brief tcp_log 함수
 
-주어진 패킷의 tcp 정보를 로그에 출력
+주어진 패킷의 tcp 정보를 log로 출력
 
 @param pkt pkt_t 구조체
 @return void
