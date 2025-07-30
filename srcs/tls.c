@@ -73,7 +73,7 @@ void tls_sni_get(pkt_t *pkt)
 	tls_ext_sn_t *ext_sn;
 
 	pkt->tls_sni = NULL;
-	if (pkt->tcp_data_offset == 0) {
+	if (tcp_data_len_get(pkt) < 5) {
 		return;
 	}
 	/* tls record 파싱 */
@@ -152,10 +152,10 @@ void tls_log(pkt_t *pkt)
 	tls_rec_t *tls_rec;
 	tls_hand_t *tls_hand;
 
-	if (pkt->tcp_data_offset == 0) {
+	tcp_data_len = tcp_data_len_get(pkt);
+	if (tcp_data_len < 5) {
 		return;
 	}
-	tcp_data_len = tcp_data_len_get(pkt);
 	tls_rec_offset = pkt->tcp_data_offset;
 	do {
 		tls_rec = (tls_rec_t *)(pkt->pkt_data + tls_rec_offset);

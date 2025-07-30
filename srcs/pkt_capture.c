@@ -25,6 +25,7 @@
 #include "ip.h"
 #include "tcp.h"
 #include "tls.h"
+#include "http.h"
 
 /*
 ********************************************************************************
@@ -55,7 +56,7 @@ static void pkt_info_log(pkt_t *pkt);
 패킷 캡처 관련 초기 설정 로직 수행
 
 @param void
-@return 성공시 0, pcap 설정 실패시 -1 반환
+@return 성공시 0, 실패시 -1 반환
 */
 int pkt_capture_setup(void)
 {
@@ -217,6 +218,7 @@ static int pkt_inspect(pkt_t *pkt)
 		return -1;
 	}
 	tcp = tcp_hdr_get(pkt);
+	pkt->tcp_data_offset = pkt->tcp_offset + tcp_hdr_len_get(pkt);
 	/* ip 필터링 */
 	if (strcmp(src_ip_str, target_ip) != 0 &&
 		strcmp(dst_ip_str, target_ip) != 0) {
@@ -232,11 +234,8 @@ static int pkt_inspect(pkt_t *pkt)
 		ntohs(tcp->src_port) != 80 && ntohs(tcp->dst_port) != 80) {
 		return -1;
 	}
-	/* tls인 경우 sni 추출 */
-	if (ntohs(tcp->src_port) == 443 || ntohs(tcp->dst_port) == 443) {
-		if (tcp_data_len_get(pkt) >= 5) {
-			pkt->tcp_data_offset = pkt->tcp_offset + tcp_hdr_len_get(pkt);
-		}
+	/* tls client hello 메시지인 경우 sni 추출 */
+	if (ntohs(tcp->dst_port) == 443) {
 		tls_sni_get(pkt);
 	}
 	return 0;
@@ -330,7 +329,11 @@ static void pkt_info_log(pkt_t *pkt)
 	eth_log(pkt);
 	ip_log(pkt);
 	tcp_log(pkt);
-	tls_log(pkt);
+	if (target_port == 80) {
+		http_log(pkt);
+	} else if (target_port == 443) {
+		tls_log(pkt);
+	}
 	LOG(INFO, "===PACKET INFO===[DONE]\n");
 }
 
