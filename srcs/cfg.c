@@ -48,6 +48,7 @@ static time_t cfg_last_mtime;
 static bool log_used;
 static bool dump_used;
 static bool sni_rst_used;
+static int cfg_interval = 10;
 
 /*
 ********************************************************************************
@@ -84,7 +85,7 @@ void cfg_apply(void)
 		while (true) {
 			clock_gettime(CLOCK_MONOTONIC, &cur_time);
 			elapsed_time = cur_time.tv_sec - start_time.tv_sec;
-			if (elapsed_time >= CFG_INTERVAL) {
+			if (elapsed_time >= cfg_interval) {
 				start_time = cur_time;
 				break;
 			}
@@ -153,6 +154,19 @@ sni로 rst 패킷 전송 사용 유무 반환
 bool cfg_sni_rst_is_used(void)
 {
 	return sni_rst_used;
+}
+
+/**
+@brief cfg_interval 함수
+
+conf 파일 확인 간격 값 반환
+
+@param void
+@return int conf 파일 확인 간격
+*/
+int cfg_interval_get(void)
+{
+	return cfg_interval;
 }
 
 /**
@@ -363,6 +377,9 @@ static int cfg_key_verify(void)
 	} else if (!cfg_val_find(CFG_SNI_RST)) {
 		syslog(LOG_ERR, "Configuration \"%s\" is required.", CFG_SNI_RST);
 		return -1;
+	} else if (!cfg_val_find(CFG_INTERVAL)) {
+		syslog(LOG_ERR, "Configuration \"%s\" is required.", CFG_INTERVAL);
+		return -1;
 	}
 	return 0;
 }
@@ -383,6 +400,7 @@ static int cfg_val_verify(void)
 	const char *target_ip;
 	const char *target_port_str;
 	int target_port;
+	const char *cfg_interval_str;
 	bool is_exist = false;
 	struct ifaddrs *ifaddr, *ifa;
 	struct in_addr ip_addr;
@@ -415,7 +433,7 @@ static int cfg_val_verify(void)
 		syslog(LOG_ERR, "Invalid pkt_cnts(%s).", pkt_cnts_str);
 		return -1;
 	}
-	pkt_cnts = atoi(cfg_val_find(CFG_PKT_CNTS));
+	pkt_cnts = atoi(pkt_cnts_str);
 	if (pkt_cnts < 0 || pkt_cnts > MAX_PKT_CNTS) {
 		syslog(LOG_ERR, "Invalid pkt_cnts(%d).", pkt_cnts);
 		return -1;
@@ -433,11 +451,23 @@ static int cfg_val_verify(void)
 	    syslog(LOG_ERR, "Invalid target_port(%s).", target_port_str);
 		return -1;
 	}
-	target_port = atoi(cfg_val_find(CFG_TARGET_PORT));
+	target_port = atoi(target_port_str);
 	if (target_port < 0 || target_port > 65535) {
 	    syslog(LOG_ERR, "Invalid target_port(%d).", target_port);
 		return -1;
 	}
+	/* cfg_interval 값 검사 */
+	cfg_interval_str = cfg_val_find(CFG_INTERVAL);
+	if (!cfg_has_num(cfg_interval_str)) {
+	    syslog(LOG_ERR, "Invalid cfg_interval(%s).", cfg_interval_str);
+		return -1;
+	}
+	if (atoi(cfg_interval_str) <= 0 ||
+			atoi(cfg_interval_str) > MAX_CFG_INTERVAL) {
+	    syslog(LOG_ERR, "Invalid cfg_interval(%s).", cfg_interval_str);
+		return -1;
+	}
+	cfg_interval = atoi(cfg_interval_str);
 	return 0;
 }
 

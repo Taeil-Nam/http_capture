@@ -111,7 +111,7 @@ static void run(void)
 		clock_gettime(CLOCK_MONOTONIC, &cur_time);
 		elapsed_time = cur_time.tv_sec - start_time.tv_sec;
 		/* CFG_INTERVAL 마다 conf 수정 유무 확인 */
-		if (elapsed_time >= CFG_INTERVAL) {
+		if (elapsed_time >= cfg_interval_get()) {
 			if (cfg_file_is_modified()) {
 				syslog(LOG_INFO, "Packet capture...[DONE]");
 				syslog(LOG_INFO, "Contiguration file modified.");
