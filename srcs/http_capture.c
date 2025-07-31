@@ -34,6 +34,12 @@ libpcap 라이브러리
 #include "cfg.h"
 #include "log.h"
 #include "pkt_capture.h"
+/*
+********************************************************************************
+* VARIABLES
+********************************************************************************
+*/
+static bool is_running = true;
 
 /*
 ********************************************************************************
@@ -44,6 +50,7 @@ static void init(void);
 static void run(void);
 static void cleanup(void);
 static void process_demonize(void);
+static void sigterm_handler(int signum);
 
 /**
 @brief main 함수
@@ -103,7 +110,7 @@ static void run(void)
 
 	syslog(LOG_INFO, "Packet capture...[START]");
 	clock_gettime(CLOCK_MONOTONIC, &start_time);
-	while (true) {
+	while (is_running) {
 		/* 패킷 캡처 */
 		if (pkt_capture() == -1) {
 			break;
@@ -172,6 +179,8 @@ static void process_demonize(void)
 	/* 시그널 무시 */
 	signal(SIGCHLD, SIG_IGN);
 	signal(SIGHUP, SIG_IGN);
+	/* KILL 시그널(SIGTERM) 핸들러 등록 */
+	signal(SIGTERM, sigterm_handler);
 	/* 터미널 분리 보장 */
 	pid = fork();
 	if (pid < 0) {
@@ -189,3 +198,17 @@ static void process_demonize(void)
 	}
 }
 
+/**
+@brief sigterm_handler 정적 함수
+
+kill 시그널(sigterm)을 받은 경우 호출됨
+is_running = false로 설정하여 프로세스를 종료
+
+@param int signal 번호(15)
+@return void
+*/
+static void sigterm_handler(int signum)
+{
+	syslog(LOG_INFO, "SIGTERM(%d) Received", signum);
+	is_running = false;
+}
