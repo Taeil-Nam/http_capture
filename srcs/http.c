@@ -21,14 +21,14 @@
 */
 void http_log(pkt_t *pkt)
 {
-	const uint8_t *http_offset;
+	const uint8_t *http;
 	const char *http_str;
 
-	if (tcp_data_len_get(pkt) < 4) {
+	if (tcp_data_len_get(pkt) == 0) {
 		return;
 	}
-	http_offset = pkt->pkt_data + pkt->tcp_data_offset;
-	http_str = strndup((const char *)http_offset, tcp_data_len_get(pkt));
+	http = pkt->pkt_data + pkt->tcp_data_offset;
+	http_str = strndup((const char *)http, tcp_data_len_get(pkt));
 	LOG(INFO, "[HTTP]\n%s", http_str);
 	free((void *)http_str);
 }
