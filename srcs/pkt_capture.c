@@ -260,15 +260,11 @@ static void pkt_tcp_rst_send(pkt_t *pkt)
 	tcp_hdr_t *tcp_prev;
 	int retval;
 	pkt_t tcp_rst;
-	struct pcap_pkthdr send_pkt_hdr;
 
 	memset(&send_pkt, 0, sizeof(send_pkt));
 	eth_prev = (eth_hdr_t *)(pkt->pkt_data);
 	ip_prev = (ip_hdr_t *)(pkt->pkt_data + pkt->ip_offset);
 	tcp_prev = (tcp_hdr_t *)(pkt->pkt_data + pkt->tcp_offset);
-	gettimeofday(&send_pkt_hdr.ts, NULL);
-	send_pkt_hdr.caplen = 60;
-	send_pkt_hdr.len = 60;
 
 	/* ethernet 헤더 설정 */
 	eth = (eth_hdr_t *)send_pkt;
@@ -311,7 +307,7 @@ static void pkt_tcp_rst_send(pkt_t *pkt)
 		return;
 	}
 	/* 패킷 전송 dump 생성 */
-	pcap_dump((u_char *)dumper, &send_pkt_hdr, send_pkt);
+	pcap_dump((u_char *)dumper, pkt->pkt_hdr, send_pkt);
 	/* 패킷 전송 log 출력 */
 	LOG(INFO, "=====SENT TCP RST PACKET=====[START]");
 	memset(&tcp_rst, 0, sizeof(pkt_t));
