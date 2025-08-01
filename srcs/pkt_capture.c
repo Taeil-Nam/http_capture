@@ -6,6 +6,7 @@
 */
 
 #include <arpa/inet.h>
+#include <ctype.h>
 #include <errno.h>
 #include <linux/if_ether.h>
 #include <net/if.h>
@@ -38,7 +39,8 @@ static const char *net_if;
 static int pkt_cnts;
 static int cur_pkt_cnts;
 static const char *target_ip;
-static unsigned short target_port;
+static const char *target_port_str;
+bool pkt_port_filter_list[MAX_PORT_NUM + 1];
 static char err_buf[PCAP_ERRBUF_SIZE];
 
 /*
@@ -46,6 +48,7 @@ static char err_buf[PCAP_ERRBUF_SIZE];
 * PROTOTYPES
 ********************************************************************************
 */
+static void pkt_target_port_apply(void);
 static int pkt_inspect(pkt_t *pkt);
 static void pkt_tcp_rst_send(pkt_t *pkt);
 static void pkt_info_log(pkt_t *pkt);
@@ -69,7 +72,7 @@ int pkt_capture_setup(void)
 	cur_pkt_cnts = 0;
 	/* 패킷 필터링 설정 */
 	target_ip = cfg_val_find(CFG_TARGET_IP);
-	target_port = atoi(cfg_val_find(CFG_TARGET_PORT));
+	pkt_target_port_apply();
 	/* pcap_t 생성 */
 	net_if = cfg_val_find(CFG_NET_IF_NAME);
 	pcap_handle = pcap_create(net_if, err_buf);
@@ -152,6 +155,19 @@ int pkt_capture(void)
 	cur_pkt_cnts++;
 	return 0;
 }
+/**
+@brief pkt_port_is_filtered 함수
+
+전달 받은 port 번호가 필터링 목록에 포함되는지 여부를 반환
+
+@param void
+@return bool 포함되는 경우 true, 미포함인 경우 false 반환
+*/
+bool pkt_port_is_filtered(uint16_t port)
+{
+	return pkt_port_filter_list[port];
+}
+
 
 /**
 @brief pkt_capture_free 함수
@@ -172,6 +188,95 @@ void pkt_capture_free(void)
 		dumper = NULL;
 	}
 	log_file_close();
+}
+
+/**
+@brief pkt_target_port_apply 정적 함수
+
+port 번호 목록을 파싱 후 필터링 적용
+
+@param void
+@return void
+*/
+void pkt_target_port_apply(void)
+{
+	int target_port_str_len = 0;
+	int start = 0;
+	int end = 0;
+	int idx = 0;
+	int port_number = 0;
+	bool flag = false;
+
+	target_port_str = cfg_val_find(CFG_TARGET_PORT);
+	target_port_str_len = (int)strlen(target_port_str);
+	memset(pkt_port_filter_list, 0, sizeof(pkt_port_filter_list));
+	while (end < target_port_str_len) {
+		const char *port_str = NULL;
+		flag = false;
+
+		/* 콤마(',')를 기준으로 각 port 번호 파싱 */
+		while (target_port_str[end] != ',' && end < target_port_str_len) {
+			end++;
+		}
+		/* 값이 없는 경우 생략 */
+		if (end - start == 0) {
+			end++;
+			start = end;
+			continue;
+		}
+		/* start ~ end까지의 문자열 저장 */
+		port_str = strndup(&target_port_str[start], end - start);
+		if (port_str == NULL) {
+			syslog(LOG_ERR, "strndup returns NULL in pkt_target_port_apply()");
+			end++;
+			start = end;
+			continue;
+		}
+		/* 자리 수가 5를 초과하는 경우 생략 */
+		if (end - start > 5) {
+			syslog(LOG_WARNING, "Target port [%s] is invalid. "
+				"Program will ignore this port number during capture.",
+				port_str);
+			free((void *)port_str);
+			end++;
+			start = end;
+			continue;
+		}
+		/* 숫자가 아닌 값이 포함되어 있으면 생략 */
+		idx = 0;
+		while (idx < end - start) {
+			if (!isdigit(port_str[idx])) {
+				syslog(LOG_WARNING, "Target port [%s] is invalid. "
+					"Program will ignore this port number during capture.",
+					port_str);
+				flag = true;
+				break;
+			}
+			idx++;
+		}
+		if (flag) {
+			free((void *)port_str);
+			end++;
+			start = end;
+			continue;
+		}
+		/* port number = 0 ~ 65535가 아닌 경우 생략 */
+		port_number = atoi(port_str);
+		if (port_number < 0 || port_number > MAX_PORT_NUM) {
+			syslog(LOG_WARNING, "Target port [%s] is invalid. "
+				"Program will ignore this port number during capture.",
+				port_str);
+			free((void *)port_str);
+			end++;
+			start = end;
+			continue;
+		}
+		/* port filter 목록에 추가 */
+		pkt_port_filter_list[port_number] = true;
+		free((void *)port_str);
+		end++;
+		start = end;
+	}
 }
 
 /**
@@ -225,13 +330,8 @@ static int pkt_inspect(pkt_t *pkt)
 		return -1;
 	}
 	/* port 번호 필터링 */
-	if (ntohs(tcp->src_port) != target_port &&
-		ntohs(tcp->dst_port) != target_port) {
-		return -1;
-	}
-	/* tls와 http만 수신 */
-	if (ntohs(tcp->src_port) != 443 && ntohs(tcp->dst_port) != 443 &&
-		ntohs(tcp->src_port) != 80 && ntohs(tcp->dst_port) != 80) {
+	if (!pkt_port_is_filtered(ntohs(tcp->src_port)) &&
+		!pkt_port_is_filtered(ntohs(tcp->dst_port))) {
 		return -1;
 	}
 	/* tls client hello 메시지인 경우 sni 추출 */
@@ -333,11 +433,8 @@ static void pkt_info_log(pkt_t *pkt)
 	eth_log(pkt);
 	ip_log(pkt);
 	tcp_log(pkt);
-	if (target_port == 80) {
-		http_log(pkt);
-	} else if (target_port == 443) {
-		tls_log(pkt);
-	}
+	http_log(pkt);
+	tls_log(pkt);
 	LOG(INFO, "===PACKET INFO===[DONE]\n");
 }
 

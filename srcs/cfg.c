@@ -399,7 +399,6 @@ static int cfg_val_verify(void)
 	int pkt_cnts;
 	const char *target_ip;
 	const char *target_port_str;
-	int target_port;
 	const char *cfg_interval_str;
 	bool is_exist = false;
 	struct ifaddrs *ifaddr, *ifa;
@@ -449,11 +448,6 @@ static int cfg_val_verify(void)
 	target_port_str = cfg_val_find(CFG_TARGET_PORT);
 	if (!cfg_has_num(target_port_str)) {
 	    syslog(LOG_ERR, "Invalid target_port(%s).", target_port_str);
-		return -1;
-	}
-	target_port = atoi(target_port_str);
-	if (target_port < 0 || target_port > 65535) {
-	    syslog(LOG_ERR, "Invalid target_port(%d).", target_port);
 		return -1;
 	}
 	/* cfg_interval 값 검사 */

@@ -147,13 +147,16 @@ void tls_sni_get(pkt_t *pkt)
 */
 void tls_log(pkt_t *pkt)
 {
+	tcp_hdr_t *tcp;
 	uint16_t tcp_data_len;
 	uint32_t tls_rec_offset;
 	tls_rec_t *tls_rec;
 	tls_hand_t *tls_hand;
 
+	tcp = tcp_hdr_get(pkt);
 	tcp_data_len = tcp_data_len_get(pkt);
-	if (tcp_data_len < 5) {
+	if ((ntohs(tcp->src_port) != 443 && ntohs(tcp->dst_port) != 443) ||
+		tcp_data_len < 5) {
 		return;
 	}
 	tls_rec_offset = pkt->tcp_data_offset;

@@ -9,6 +9,7 @@
 #define PKT_CAPTURE_H
 
 #include <pcap.h>
+#include <stdbool.h>
 
 /*
 ********************************************************************************
@@ -43,6 +44,7 @@ typedef struct pkt {
 */
 int pkt_capture_setup(void);
 int pkt_capture(void);
+bool pkt_port_is_filtered(uint16_t port);
 void pkt_capture_free(void);
 
 #endif

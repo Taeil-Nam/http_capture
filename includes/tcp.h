@@ -16,6 +16,7 @@
 * CONSTANTS
 ********************************************************************************
 */
+#define MAX_PORT_NUM 65535 /**< port number 최대값 */
 #define PSEUDO_HDR_LEN 12 /**< pseudo header 길이(bytes) */
 
 /*

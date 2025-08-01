@@ -21,10 +21,13 @@
 */
 void http_log(pkt_t *pkt)
 {
+	tcp_hdr_t *tcp;
 	const uint8_t *http;
 	const char *http_str;
 
-	if (tcp_data_len_get(pkt) == 0) {
+	tcp = tcp_hdr_get(pkt);
+	if ((ntohs(tcp->src_port) != 80 && ntohs(tcp->dst_port) != 80) ||
+		tcp_data_len_get(pkt) == 0) {
 		return;
 	}
 	http = pkt->pkt_data + pkt->tcp_data_offset;
