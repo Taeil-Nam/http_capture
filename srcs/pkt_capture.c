@@ -352,6 +352,7 @@ static int pkt_inspect(pkt_t *pkt)
 static void pkt_tcp_rst_send(pkt_t *pkt)
 {
 	uint8_t send_pkt[60];
+	struct pcap_pkthdr send_pkt_hdr;
 	eth_hdr_t *eth;
 	eth_hdr_t *eth_prev;
 	ip_hdr_t *ip;
@@ -361,7 +362,7 @@ static void pkt_tcp_rst_send(pkt_t *pkt)
 	int retval;
 	pkt_t tcp_rst;
 
-	memset(&send_pkt, 0, sizeof(send_pkt));
+	memset(send_pkt, 0, sizeof(send_pkt));
 	eth_prev = (eth_hdr_t *)(pkt->pkt_data);
 	ip_prev = (ip_hdr_t *)(pkt->pkt_data + pkt->ip_offset);
 	tcp_prev = (tcp_hdr_t *)(pkt->pkt_data + pkt->tcp_offset);
@@ -407,7 +408,10 @@ static void pkt_tcp_rst_send(pkt_t *pkt)
 		return;
 	}
 	/* 패킷 전송 dump 생성 */
-	pcap_dump((u_char *)dumper, pkt->pkt_hdr, send_pkt);
+	gettimeofday(&send_pkt_hdr.ts, NULL);
+	send_pkt_hdr.caplen = 60;
+	send_pkt_hdr.len = 60;
+	pcap_dump((u_char *)dumper, &send_pkt_hdr, send_pkt);
 	/* 패킷 전송 log 출력 */
 	LOG(INFO, "=====SENT TCP RST PACKET=====[START]");
 	memset(&tcp_rst, 0, sizeof(pkt_t));
