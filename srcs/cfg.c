@@ -436,7 +436,8 @@ static int cfg_val_verify(void)
 	}
 	pkt_cnts = atoi(pkt_cnts_str);
 	if (pkt_cnts > MAX_PKT_CNTS) {
-		syslog(LOG_ERR, "pkt_cnts(%d) too high. (<%d)", pkt_cnts, MAX_PKT_CNTS);
+		syslog(LOG_ERR, "pkt_cnts(%d) is too high. (<=%d)",
+			pkt_cnts, MAX_PKT_CNTS);
 		return -1;
 	}
 	/* target_ip 값 검사 */
@@ -484,13 +485,13 @@ static int cfg_val_verify(void)
 	}
 	/* cfg_interval 값 검사 */
 	cfg_interval_str = cfg_val_find(CFG_INTERVAL);
-	if (!cfg_has_num(cfg_interval_str)) {
+	if (!cfg_has_num_only(cfg_interval_str)) {
 	    syslog(LOG_ERR, "Invalid cfg_interval(%s).", cfg_interval_str);
 		return -1;
 	}
-	if (atoi(cfg_interval_str) <= 0 ||
-			atoi(cfg_interval_str) > MAX_CFG_INTERVAL) {
-	    syslog(LOG_ERR, "Invalid cfg_interval(%s).", cfg_interval_str);
+	if (atoi(cfg_interval_str) > MAX_CFG_INTERVAL) {
+	    syslog(LOG_ERR, "cfg_interval(%s) is too high. (<=%d)",
+			cfg_interval_str, MAX_CFG_INTERVAL);
 		return -1;
 	}
 	cfg_interval = atoi(cfg_interval_str);
