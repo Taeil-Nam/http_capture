@@ -65,8 +65,6 @@ int pkt_capture_setup(void)
 {
 	syslog(LOG_INFO, "Setting packet capture...[START]");
 	pkt_capture_free();
-	/* log 파일 생성 */
-	log_file_open();
 	/* 패킷 카운트 설정 */
 	pkt_cnts = atoi(cfg_val_find(CFG_PKT_CNTS));
 	cur_pkt_cnts = 0;
@@ -95,6 +93,8 @@ int pkt_capture_setup(void)
 		pcap_handle = NULL;
 		return -1;
 	}
+	/* log 파일 생성 */
+	log_file_open();
 	/* dump 파일 생성 */
 	if (cfg_dump_is_used()) {
 		syslog(LOG_INFO, "Creating dump file...[START]");
