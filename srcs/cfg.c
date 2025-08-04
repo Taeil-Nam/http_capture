@@ -48,7 +48,7 @@ static time_t cfg_last_mtime;
 static bool log_used;
 static bool dump_used;
 static bool sni_rst_used;
-static int cfg_interval = 10;
+static int cfg_interval = 5;
 
 /*
 ********************************************************************************
@@ -59,10 +59,10 @@ static int cfg_parse(void);
 static int cfg_verify(void);
 static int cfg_key_verify(void);
 static int cfg_val_verify(void);
-static void cfg_info_save(void);
 static void cfg_last_mtime_update(void);
 static void cfg_invalid_err(int);
 static bool cfg_has_num(const char *str);
+static bool cfg_has_num_only(const char *str);
 
 /**
 @brief cfg_apply 함수
@@ -93,7 +93,6 @@ void cfg_apply(void)
 		}
 	}
 	cfg_last_mtime_update();
-	cfg_info_save();
 }
 
 /**
@@ -399,6 +398,9 @@ static int cfg_val_verify(void)
 	int pkt_cnts;
 	const char *target_ip;
 	const char *target_port_str;
+	const char *log_file_str;
+	const char *dump_file_str;
+	const char *sni_rst_str;
 	const char *cfg_interval_str;
 	bool is_exist = false;
 	struct ifaddrs *ifaddr, *ifa;
@@ -428,13 +430,13 @@ static int cfg_val_verify(void)
 	}
 	/* pkt_cnts 값 검사 */
 	pkt_cnts_str = cfg_val_find(CFG_PKT_CNTS);
-	if (!cfg_has_num(pkt_cnts_str)) {
+	if (!cfg_has_num_only(pkt_cnts_str)) {
 		syslog(LOG_ERR, "Invalid pkt_cnts(%s).", pkt_cnts_str);
 		return -1;
 	}
 	pkt_cnts = atoi(pkt_cnts_str);
-	if (pkt_cnts < 0 || pkt_cnts > MAX_PKT_CNTS) {
-		syslog(LOG_ERR, "Invalid pkt_cnts(%d).", pkt_cnts);
+	if (pkt_cnts > MAX_PKT_CNTS) {
+		syslog(LOG_ERR, "pkt_cnts(%d) too high. (<%d)", pkt_cnts, MAX_PKT_CNTS);
 		return -1;
 	}
 	/* target_ip 값 검사 */
@@ -448,6 +450,36 @@ static int cfg_val_verify(void)
 	target_port_str = cfg_val_find(CFG_TARGET_PORT);
 	if (!cfg_has_num(target_port_str)) {
 	    syslog(LOG_ERR, "Invalid target_port(%s).", target_port_str);
+		return -1;
+	}
+	/* log_file 값 검사 */
+	log_file_str = cfg_val_find(CFG_LOG_FILE);
+	if (strlen(log_file_str) == 1 && strcmp(log_file_str, "1") == 0) {
+		log_used = true;
+	} else if (strlen(log_file_str) == 1 && strcmp(log_file_str, "0") == 0) {
+		log_used = false;
+	} else {
+		syslog(LOG_ERR, "Invalid log_file(%s). (0 or 1)", log_file_str);
+		return -1;
+	}
+	/* dump_file 값 검사 */
+	dump_file_str = cfg_val_find(CFG_DUMP_FILE);
+	if (strlen(dump_file_str) == 1 && strcmp(dump_file_str, "1") == 0) {
+		dump_used = true;
+	} else if (strlen(dump_file_str) == 1 && strcmp(dump_file_str, "0") == 0) {
+		dump_used = false;
+	} else {
+		syslog(LOG_ERR, "Invalid dump_file(%s). (0 or 1)", dump_file_str);
+		return -1;
+	}
+	/* sni_rst 값 검사 */
+	sni_rst_str = cfg_val_find(CFG_SNI_RST);
+	if (strlen(sni_rst_str) == 1 && strcmp(sni_rst_str, "1") == 0) {
+		sni_rst_used = true;
+	} else if (strlen(sni_rst_str) == 1 && strcmp(sni_rst_str, "0") == 0) {
+		sni_rst_used = false;
+	} else {
+		syslog(LOG_ERR, "Invalid sni_rst(%s). (0 or 1)", sni_rst_str);
 		return -1;
 	}
 	/* cfg_interval 값 검사 */
@@ -465,37 +497,6 @@ static int cfg_val_verify(void)
 	return 0;
 }
 
-/**
-@brief cfg_info_save 정적 함수
-
-설정 관련 정보 저장
-
-@param void
-@return void
-*/
-static void cfg_info_save(void)
-{
-	syslog(LOG_INFO, "Saving configuration info...[START]");
-	/* log 파일 사용 유무 저장 */
-	if (strcmp(cfg_val_find(CFG_LOG_FILE), "1") == 0) {
-		log_used = true;
-	} else {
-		log_used = false;
-	}
-	/* dump 파일 사용 유무 저장 */
-	if (strcmp(cfg_val_find(CFG_DUMP_FILE), "1") == 0) {
-		dump_used = true;
-	} else {
-		dump_used = false;
-	}
-	/* SNI로 RESET 패킷 전송 사용 유무 저장 */
-	if (strcmp(cfg_val_find(CFG_SNI_RST), "1") == 0) {
-		sni_rst_used = true;
-	} else {
-		sni_rst_used = false;
-	}
-	syslog(LOG_INFO, "Saving configuration info...[DONE]");
-}
 /**
 @brief cfg_last_mtime_update 정적 함수
 
@@ -549,5 +550,26 @@ static bool cfg_has_num(const char *str)
 		idx++;
 	}
 	return false;
+}
+
+/**
+@brief cfg_has_num_only 정적 함수
+
+설정에 숫자만 포함되어 있는지 확인
+
+@param str 확인할 설정 문자열
+@return 숫자만 포함되어 있으면 true, 미포함 시 false 반환
+*/
+static bool cfg_has_num_only(const char *str)
+{
+	int idx = 0;
+
+	while (str[idx]) {
+		if (str[idx] < '0' || str[idx] > '9') {
+			return false;
+		}
+		idx++;
+	}
+	return true;
 }
 

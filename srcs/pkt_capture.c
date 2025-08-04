@@ -411,7 +411,9 @@ static void pkt_tcp_rst_send(pkt_t *pkt)
 	gettimeofday(&send_pkt_hdr.ts, NULL);
 	send_pkt_hdr.caplen = 60;
 	send_pkt_hdr.len = 60;
-	pcap_dump((u_char *)dumper, &send_pkt_hdr, send_pkt);
+	if (cfg_dump_is_used()) {
+		pcap_dump((u_char *)dumper, &send_pkt_hdr, send_pkt);
+	}
 	/* 패킷 전송 log 출력 */
 	LOG(INFO, "=====SENT TCP RST PACKET=====[START]");
 	memset(&tcp_rst, 0, sizeof(pkt_t));
