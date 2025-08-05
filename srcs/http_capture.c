@@ -87,6 +87,7 @@ static void init(void)
 	cfg_apply();
 	/* 패킷 캡처 관련 설정 */
 	if (pkt_capture_setup() == -1) {
+		cleanup();
 		syslog(LOG_INFO, "daemon terminated.");
 		exit(EXIT_FAILURE);
 	}
