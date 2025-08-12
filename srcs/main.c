@@ -1,5 +1,5 @@
 /**
-@file http_capture.c
+@file main.c
 @author 남태일(taeil.nam@monitorapp.com)
 @date 2025-07-15
 @brief http_capture 프로그램의 시작
