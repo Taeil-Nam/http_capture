@@ -37,4 +37,4 @@ re:
 	make -s clean
 	make -s all
 
-.PHONY : all clean re
+.PHONY : all debug clean re
