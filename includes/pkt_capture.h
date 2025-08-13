@@ -1,8 +1,8 @@
 /**
 @file pkt_capture.h
-@author 남태일(taeil.nam@monitorapp.com)
-@date 2025-07-20
-@brief 패킷 캡처 관련 헤더파일
+@author 남태일(taeil.nam@monitorapp.com).
+@date 2025-07-20.
+@brief 패킷 캡처 관련 헤더파일.
 */
 
 #ifndef PKT_CAPTURE_H
@@ -24,7 +24,7 @@
 ********************************************************************************
 */
 /**
-@brief 캡처된 패킷의 정보를 가지고 있는 구조체
+@brief 캡처된 패킷의 정보를 가지고 있는 구조체.
 */
 typedef struct pkt {
 	struct pcap_pkthdr *pkt_hdr; /**< pcap으로 캡처된 패킷의 정보 */

@@ -1,8 +1,8 @@
 /**
 @file log.c
-@author 남태일(taeil.nam@monitorapp.com)
-@date 2025-07-17
-@brief log 관련 코드 
+@author 남태일(taeil.nam@monitorapp.com).
+@date 2025-07-17.
+@brief log 관련 코드.
 */
 
 #include <stdarg.h>
@@ -19,21 +19,23 @@
 static FILE *log_file;
 
 /**
-@brief log_file_open 함수
+@brief log_file_open 함수.
 
-conf 파일에 log 파일 사용이 명시되어있을 경우(1) log 파일 생성
-log 파일은 초기 한 번만 생성
-log 파일을 append 모드, 즉시 출력 모드로 생성
-log 파일 생성 실패시 프로그램 종료
+conf 파일에 log 파일 사용이 명시되어있을 경우(1) log 파일 생성.
+log 파일은 초기 한 번만 생성.
+log 파일을 append 모드, 즉시 출력 모드로 생성.
+log 파일 생성 실패시 프로그램 종료.
 
-@param void
-@return void 
+@param void.
+@return void.
 */
 void log_file_open(void)
 {
+	/* log 미사용 상태인 경우 생략 */
 	if (!cfg_log_is_used()) {
 		return;
 	}
+	/* log 파일이 이미 열려있는 경우 생략 */
 	if (log_file) {
 		return;
 	}
@@ -48,17 +50,17 @@ void log_file_open(void)
 }
 
 /**
-@brief log_wr 함수
+@brief log_wr 함수.
 
-입력된 level과 문자열 포맷에 맞게 log를 출력
-날짜, level, 문자열 순서로 log를 출력
-자동으로 줄바꿈 지원
-log 파일이 생성되지 않았거나, 미사용 상태인 경우 종료
+입력된 level과 문자열 포맷에 맞게 log를 출력.
+날짜, level, 문자열 순서로 log를 출력.
+자동으로 줄바꿈 지원.
+log 파일이 생성되지 않았거나, 미사용 상태인 경우 종료.
 
-@param level log 레벨
-@param fmt log 문자열 형식
-@param ... log 문자열 형식에 포함된 가변 인자
-@return void 
+@param level log 레벨.
+@param fmt log 문자열 형식.
+@param ... log 문자열 형식에 포함된 가변 인자.
+@return void.
 */
 void log_wr(const char *level, const char *fmt, ...)
 {
@@ -67,9 +69,11 @@ void log_wr(const char *level, const char *fmt, ...)
 	char time_buf[32];
 	va_list args;
 
+	/* log 파일이 생성되지 않았거나, log 미사용 상태인 경우 생략 */
 	if (!log_file || !cfg_log_is_used()) {
 		return;
 	}
+
 	strftime(time_buf, sizeof(time_buf), "%Y-%m-%d %H:%M:%S", t);
 	fprintf(log_file, "[%s][%s] ", time_buf, level);
 	va_start(args, fmt);
@@ -79,12 +83,12 @@ void log_wr(const char *level, const char *fmt, ...)
 }
 
 /**
-@brief log_file_close 함수
+@brief log_file_close 함수.
 
-log 파일 close
+log 파일 close.
 
-@param void
-@return void 
+@param void.
+@return void.
 */
 void log_file_close(void)
 {

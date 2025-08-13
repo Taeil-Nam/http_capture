@@ -1,8 +1,8 @@
 /**
 @file log.h
-@author 남태일(taeil.nam@monitorapp.com)
-@date 2025-07-17
-@brief log 관련 헤더파일
+@author 남태일(taeil.nam@monitorapp.com).
+@date 2025-07-17.
+@brief log 관련 헤더파일.
 */
 
 #ifndef LOG_H 

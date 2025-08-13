@@ -1,8 +1,8 @@
 /**
 @file tcp.h
-@author 남태일(taeil.nam@monitorapp.com)
-@date 2025-07-23
-@brief tcp 로직 관련 헤더 파일
+@author 남태일(taeil.nam@monitorapp.com).
+@date 2025-07-23.
+@brief tcp 로직 관련 헤더 파일.
 */
 
 #ifndef TCP_H
@@ -25,7 +25,7 @@
 ********************************************************************************
 */
 /**
-@brief tcp 헤더를 나타내는 구조체
+@brief tcp 헤더를 나타내는 구조체.
 */
 typedef struct __attribute__((packed)) tcp_hdr {
 	uint16_t src_port; /**< source port */

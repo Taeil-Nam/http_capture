@@ -1,20 +1,20 @@
 /**
 @file eth.c
-@author 남태일(taeil.nam@monitorapp.com)
-@date 2025-07-23
-@brief ethernet 로직 관련 코드
+@author 남태일(taeil.nam@monitorapp.com).
+@date 2025-07-23.
+@brief ethernet 로직 관련 코드.
 */
 
 #include "eth.h"
 #include "log.h"
 
 /**
-@brief eth_hdr_get 함수
+@brief eth_hdr_get 함수.
 
-주어진 패킷의 ethernet 헤더 반환
+주어진 패킷의 ethernet 헤더 반환.
 
-@param pkt pkt_t 구조체
-@return eth_hdr_t 구조체 포인터 반환
+@param pkt pkt_t 구조체.
+@return eth_hdr_t 구조체 포인터 반환.
 */
 eth_hdr_t *eth_hdr_get(pkt_t *pkt)
 {
@@ -22,12 +22,12 @@ eth_hdr_t *eth_hdr_get(pkt_t *pkt)
 }
 
 /**
-@brief eth_log 함수
+@brief eth_log 함수.
 
-주어진 패킷의 ethernet 정보를 log로 출력
+주어진 패킷의 ethernet 정보를 log로 출력.
 
-@param pkt pkt_t 구조체
-@return void
+@param pkt pkt_t 구조체.
+@return void.
 */
 void eth_log(pkt_t *pkt)
 {

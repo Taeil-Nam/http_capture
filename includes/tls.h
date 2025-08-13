@@ -1,8 +1,8 @@
 /**
 @file tls.h
-@author 남태일(taeil.nam@monitorapp.com)
-@date 2025-07-23
-@brief tls 로직 관련 헤더 파일
+@author 남태일(taeil.nam@monitorapp.com).
+@date 2025-07-23.
+@brief tls 로직 관련 헤더 파일.
 */
 
 #ifndef TLS_H
@@ -49,7 +49,7 @@
 ********************************************************************************
 */
 /**
-@brief tls record를 나타내는 구조체
+@brief tls record를 나타내는 구조체.
 */
 typedef struct __attribute__((packed)) tls_rec {
 	uint8_t type; /**< type */
@@ -58,7 +58,7 @@ typedef struct __attribute__((packed)) tls_rec {
 } tls_rec_t;
 
 /**
-@brief tls handshake를 나타내는 구조체
+@brief tls handshake를 나타내는 구조체.
 */
 typedef struct  __attribute__((packed)) tls_hand {
 	uint8_t type; /**< type */
@@ -66,7 +66,7 @@ typedef struct  __attribute__((packed)) tls_hand {
 } tls_hand_t;
 
 /**
-@brief tls extension을 나타내는 구조체
+@brief tls extension을 나타내는 구조체.
 */
 typedef struct __attribute__((packed)) tls_ext {
 	uint16_t type; /**< type */
@@ -74,7 +74,7 @@ typedef struct __attribute__((packed)) tls_ext {
 } tls_ext_t;
 
 /**
-@brief tls server name extension을 나타내는 구조체
+@brief tls server name extension을 나타내는 구조체.
 */
 typedef struct __attribute__((packed)) tls_ext_sn {
 	uint16_t len; /**< length */

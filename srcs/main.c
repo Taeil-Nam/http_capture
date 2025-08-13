@@ -1,25 +1,25 @@
 /**
 @file main.c
-@author 남태일(taeil.nam@monitorapp.com)
-@date 2025-07-15
-@brief http_capture 프로그램의 시작
+@author 남태일(taeil.nam@monitorapp.com).
+@date 2025-07-15.
+@brief http_capture 프로그램의 시작.
 */
 
 /**
-@mainpage http 패킷 캡처 프로그램
+@mainpage http 패킷 캡처 프로그램.
 
 @section intro
-이 프로젝트는 간단한 http 패킷 캡처 프로그램 예제이다
+이 프로젝트는 간단한 http 패킷 캡처 프로그램 예제이다.
 
 @section developer
-남태일(taeil.nam@monitorapp.com)
+남태일(taeil.nam@monitorapp.com).
 
 @section history
-2025-07-15: 프로젝트 시작
+2025-07-15: 프로젝트 시작.
 
 @section requirment
-우분투 환경
-libpcap 라이브러리
+우분투 환경.
+libpcap 라이브러리.
 */
 
 #include <stdio.h>
@@ -34,6 +34,7 @@ libpcap 라이브러리
 #include "cfg.h"
 #include "log.h"
 #include "pkt_capture.h"
+
 /*
 ********************************************************************************
 * VARIABLES
@@ -55,10 +56,10 @@ static void sigterm_handler(int signum);
 /**
 @brief main 함수
 
-프로그램의 시작 코드
+프로그램의 시작 코드.
 
-@param void
-@return 성공시 0 반환, 오류 발생시 1 반환
+@param void.
+@return 성공시 0 반환, 오류 발생시 1 반환.
 */
 int main(void)
 {
@@ -69,22 +70,26 @@ int main(void)
 }
 
 /**
-@brief init 정적 함수
+@brief init 정적 함수.
 
-프로그램 초기 설정
+프로그램 초기 설정 로직을 수행.
+패킷 캡처 설정 오류 발생시, 프로그램 종료.
 
-@param void
-@return void
+@param void.
+@return void.
 */
 static void init(void)
 {
 	/* 데몬 프로세스로 변환 */
 	process_demonize();
+
 	/* syslog 시작 */
 	openlog(NULL, LOG_PID | LOG_NDELAY, LOG_DAEMON);
 	syslog(LOG_INFO, "daemon started.");
+
 	/* conf 설정 적용 */
 	cfg_apply();
+
 	/* 패킷 캡처 관련 설정 */
 	if (pkt_capture_setup() == -1) {
 		cleanup();
@@ -94,15 +99,16 @@ static void init(void)
 }
 
 /**
-@brief run 정적 함수
+@brief run 정적 함수.
 
-프로그램의 main 로직을 수행
-실시간으로 패킷 캡처(Non-blocking)
-CFG_INTERVAL 마다 conf 파일 수정 유무 확인
-conf 파일 수정 시, 수정된 설정 적용 후 다시 캡처
+프로그램의 main 로직을 수행.
+실시간으로 패킷 캡처(Non-blocking).
+CFG_INTERVAL 마다 conf 파일 수정 유무 확인.
+conf 파일 수정 시, 수정된 설정 적용 후 다시 캡처.
+패킷 캡처 재설정 오류 발생시 프로그램 종료.
 
-@param void
-@return void
+@param void.
+@return void.
 */
 static void run(void)
 {
@@ -118,6 +124,7 @@ static void run(void)
 		}
 		clock_gettime(CLOCK_MONOTONIC, &cur_time);
 		elapsed_time = cur_time.tv_sec - start_time.tv_sec;
+
 		/* CFG_INTERVAL 마다 conf 수정 유무 확인 */
 		if (elapsed_time >= cfg_interval_get()) {
 			if (cfg_file_is_modified()) {
@@ -137,12 +144,12 @@ static void run(void)
 }
 
 /**
-@brief cleanup 정적 함수
+@brief cleanup 정적 함수.
 
-프로그램 종료 전, 사용된 자원 반납
+프로그램 종료 전, 프로그램에서 사용된 자원 반납.
 
-@param void
-@return void
+@param void.
+@return void.
 */
 static void cleanup(void)
 {
@@ -173,15 +180,19 @@ static void process_demonize(void)
 	} else if (pid > 0) {
 		exit(EXIT_SUCCESS);
 	}
+
 	/* 터미널과 분리 */
 	if (setsid() < 0) {
 		exit(EXIT_FAILURE);
 	}
+
 	/* 시그널 무시 */
 	signal(SIGCHLD, SIG_IGN);
 	signal(SIGHUP, SIG_IGN);
+
 	/* KILL 시그널(SIGTERM) 핸들러 등록 */
 	signal(SIGTERM, sigterm_handler);
+
 	/* 터미널 분리 보장 */
 	pid = fork();
 	if (pid < 0) {
@@ -189,10 +200,13 @@ static void process_demonize(void)
 	} else if (pid > 0) {
 		exit(EXIT_SUCCESS);
 	}
+
 	/* 기본 파일 생성 권한 설정 */
 	umask(0);
+
 	/* 작업 디렉토리 변경 */
 	chdir("/");
+
 	/* 모든 fd close */
 	for (int fd = sysconf(_SC_OPEN_MAX); fd >= 0; fd--) {
 		close(fd);
@@ -200,16 +214,17 @@ static void process_demonize(void)
 }
 
 /**
-@brief sigterm_handler 정적 함수
+@brief sigterm_handler 정적 함수.
 
-kill 시그널(sigterm)을 받은 경우 호출됨
-is_running = false로 설정하여 프로세스를 종료
+kill 시그널(sigterm)을 받은 경우 호출.
+is_running = false로 설정하여, 프로세스를 정상 종료.
 
-@param int signal 번호(15)
-@return void
+@param int signal 번호(15).
+@return void.
 */
 static void sigterm_handler(int signum)
 {
 	syslog(LOG_INFO, "SIGTERM(%d) Received", signum);
 	is_running = false;
 }
+

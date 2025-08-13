@@ -1,8 +1,8 @@
 /**
 @file cfg.c
-@author 남태일(taeil.nam@monitorapp.com)
-@date 2025-07-15
-@brief conf 파일 관련 코드
+@author 남태일(taeil.nam@monitorapp.com).
+@date 2025-07-15.
+@brief conf 파일 및 설정 관련 코드.
 */
 
 #include <arpa/inet.h>
@@ -29,7 +29,7 @@
 ********************************************************************************
 */
 /**
-@brief conf 파일의 각 설정을 나타내는 구조체
+@brief conf 파일의 각 설정을 나타내는 구조체.
 */
 typedef struct cfg_entry {
 	const char *key; /**< 설정의 key 값 */
@@ -65,11 +65,11 @@ static bool cfg_has_num(const char *str);
 static bool cfg_has_num_only(const char *str);
 
 /**
-@brief cfg_apply 함수
+@brief cfg_apply 함수.
 
-conf 파일 파싱, 검증 후 설정 적용 로직을 수행
-설정 관련 오류 발생 시, CFG_INTERVAL 마다 conf 파일 재파싱 및 검증 수행
-설정이 정상적으로 완료되면 종료
+conf 파일 파싱, 검증 후 설정 적용 로직을 수행.
+설정 관련 오류 발생 시, CFG_INTERVAL 마다 conf 파일 재파싱 및 검증 수행.
+설정이 정상적으로 완료되면 종료.
 */
 void cfg_apply(void)
 {
@@ -96,12 +96,12 @@ void cfg_apply(void)
 }
 
 /**
-@brief cfg_file_is_modified 함수
+@brief cfg_file_is_modified 함수.
 
-conf 파일의 수정 여부 반환
+conf 파일의 수정 여부 반환.
 
-@param void
-@return 수정된 경우 true, 최신 상태거나 오류 발생 시 false 반환
+@param void.
+@return 수정된 경우 true, 최신 상태거나 오류 발생 시 false 반환.
 */
 bool cfg_file_is_modified(void)
 {
@@ -117,12 +117,12 @@ bool cfg_file_is_modified(void)
 }
 
 /**
-@brief cfg_log_is_used 함수
+@brief cfg_log_is_used 함수.
 
-log 파일 사용 유무 반환
+log 파일 사용 유무 반환.
 
-@param void
-@return 사용 중인 경우 true, 아닌 경우 false 반환
+@param void.
+@return 사용 중인 경우 true, 아닌 경우 false 반환.
 */
 bool cfg_log_is_used(void)
 {
@@ -130,12 +130,12 @@ bool cfg_log_is_used(void)
 }
 
 /**
-@brief cfg_dump_is_used 함수
+@brief cfg_dump_is_used 함수.
 
-dump 파일 사용 유무 반환
+dump 파일 사용 유무 반환.
 
-@param void
-@return 사용 중인 경우 true, 아닌 경우 false 반환
+@param void.
+@return 사용 중인 경우 true, 아닌 경우 false 반환.
 */
 bool cfg_dump_is_used(void)
 {
@@ -143,12 +143,12 @@ bool cfg_dump_is_used(void)
 }
 
 /**
-@brief cfg_sni_rst_is_used 함수
+@brief cfg_sni_rst_is_used 함수.
 
-sni로 rst 패킷 전송 사용 유무 반환
+sni로 rst 패킷 전송 사용 유무 반환.
 
-@param void
-@return 사용 중인 경우 true, 아닌 경우 false 반환
+@param void.
+@return 사용 중인 경우 true, 아닌 경우 false 반환.
 */
 bool cfg_sni_rst_is_used(void)
 {
@@ -156,12 +156,12 @@ bool cfg_sni_rst_is_used(void)
 }
 
 /**
-@brief cfg_interval 함수
+@brief cfg_interval 함수.
 
-conf 파일 확인 간격 값 반환
+conf 파일 확인 간격 값 반환.
 
-@param void
-@return int conf 파일 확인 간격
+@param void.
+@return int conf 파일 확인 간격.
 */
 int cfg_interval_get(void)
 {
@@ -169,15 +169,15 @@ int cfg_interval_get(void)
 }
 
 /**
-@brief cfg_val_find 함수
+@brief cfg_val_find 함수.
 
-입력받은 key값의 value를 반환
-시간 복잡도 = O(m * n)
-m = conf 파일의 설정 개수
-n = 입력된 key 문자열의 길이
+입력받은 설정 key값의 value를 반환.
+시간 복잡도 = O(m * n).
+m = conf 파일의 설정 개수.
+n = 입력된 key 문자열의 길이.
 
-@param key key 값
-@return key가 존재하는 경우 value 반환, 존재하지 않는 경우 NULL 반환
+@param key key 값.
+@return key가 존재하는 경우 value 반환, 존재하지 않는 경우 NULL 반환.
 */
 const char *cfg_val_find(const char *key)
 {
@@ -194,12 +194,12 @@ const char *cfg_val_find(const char *key)
 }
 
 /**
-@brief cfg_print 함수
+@brief cfg_print 함수.
 
-파싱된 conf 파일의 key, value 값들을 syslog에 출력
+파싱된 conf 파일의 key, value 값들을 syslog에 출력.
 
-@param void
-@return void
+@param void.
+@return void.
 */
 void cfg_print(void)
 {
@@ -218,12 +218,12 @@ void cfg_print(void)
 }
 
 /**
-@brief cfg_free 함수
+@brief cfg_free 함수.
 
-conf 파일에 관련된 모든 자원 반납
+conf 파일 및 설정 로직에 사용된 모든 자원 반납.
 
-@param void
-@return void
+@param void.
+@return void.
 */
 void cfg_free(void)
 {
@@ -240,17 +240,17 @@ void cfg_free(void)
 }
 
 /**
-@brief cfg_parse 정적 함수
+@brief cfg_parse 정적 함수.
 
-conf 파일 파싱 후, 각 설정을 cfg_entries에 저장
-각 설정의 key, value 값을 cfg_entries[idx]에 순서대로 저장
-key, value는 동적 할당
-시간복잡도 = O(m * n)
-m = conf 파일의 설정 개수
-n = 각 설정의 길이
+conf 파일 파싱 후, 각 설정을 cfg_entries로 저장.
+각 설정의 key, value 값을 cfg_entries[idx]에 순서대로 저장.
+key, value는 동적 할당.
+시간복잡도 = O(m * n).
+m = conf 파일의 설정 개수.
+n = 각 설정의 길이.
 
-@param void
-@return 성공 시 0 반환, 실패 시 -1 반환
+@param void.
+@return 성공 시 0 반환, 실패 시 -1 반환.
 */
 static int cfg_parse(void)
 {
@@ -270,11 +270,13 @@ static int cfg_parse(void)
 		/* 주석이나 빈 줄 스킵 */
         if (line[0] == '#' || line[0] == '\n')
 			continue;
+
 		/* 설정에 '=' 미포함 시 종료 */
 		if (!strchr(line, '=')) {
 			cfg_invalid_err(line_cnts + 1);
 			return -1;
 		}
+
 		/* key 값 파싱 */
 		while (line[end] != '=') {
 			/* key 값에 white space가 포함된 경우 종료 */
@@ -284,11 +286,13 @@ static int cfg_parse(void)
 			}
 			end++;
 		}
+
 		/* key 값이 없는 경우 종료 */
 		if (end - start == 0) {
 			cfg_invalid_err(line_cnts + 1);
 			return -1;
 		}
+
 		/* key 값 저장 */
 		cfg_entries[line_cnts].key = strndup(&line[start], end - start);
 
@@ -301,6 +305,7 @@ static int cfg_parse(void)
 				cfg_invalid_err(line_cnts + 1);
 				return -1;
 			}
+
 			/* value 값에 white space가 포함된 경우 종료 */
 			if (isspace(line[end])) {
 				cfg_invalid_err(line_cnts + 1);
@@ -308,11 +313,13 @@ static int cfg_parse(void)
 			}
 			end++;
 		}
+
 		/* value 값이 없는 경우 종료 */
 		if (end - start == 0) {
 			cfg_invalid_err(line_cnts + 1);
 			return -1;
 		}
+
 		/* value 값 저장 */
 		cfg_entries[line_cnts].value = strndup(&line[start], end - start);
 
@@ -327,12 +334,12 @@ static int cfg_parse(void)
 }
 
 /**
-@brief cfg_verify 정적 함수
+@brief cfg_verify 정적 함수.
 
-conf 파일로부터 파싱된 설정 검사
+conf 파일로부터 파싱된 설정 검사.
 
-@param void
-@return 검증 성공 시 0 반환, 검증 실패 시 -1 반환
+@param void.
+@return 검증 성공 시 0 반환, 검증 실패 시 -1 반환.
 */
 static int cfg_verify(void)
 {
@@ -346,12 +353,12 @@ static int cfg_verify(void)
 }
 
 /**
-@brief cfg_key_verify 정적 함수
+@brief cfg_key_verify 정적 함수.
 
-필수 key 값들이 존재하는지 검사
+필수 key 값들이 존재하는지 검사.
 
-@param void
-@return 검증 성공 시 0 반환, 검증 실패 시 -1 반환
+@param void.
+@return 검증 성공 시 0 반환, 검증 실패 시 -1 반환.
 */
 static int cfg_key_verify(void)
 {
@@ -384,12 +391,12 @@ static int cfg_key_verify(void)
 }
 
 /**
-@brief cfg_val_verify 정적 함수
+@brief cfg_val_verify 정적 함수.
 
-conf 파일로부터 파싱된 value 값 검사
+conf 파일로부터 파싱된 value 값 검사.
 
-@param void
-@return 검증 성공 시 0 반환, 검증 실패 시 -1 반환
+@param void.
+@return 검증 성공 시 0 반환, 검증 실패 시 -1 반환.
 */
 static int cfg_val_verify(void)
 {
@@ -412,6 +419,7 @@ static int cfg_val_verify(void)
 	    syslog(LOG_ERR, "%s", strerror(errno));
 		return -1;
 	}
+
 	/* net_if_name과 동일한 이름의 네트워크 인터페이스가 있는지 확인 */
 	net_if_name = cfg_val_find(CFG_NET_IF_NAME);
 	ifa = ifaddr;
@@ -428,6 +436,7 @@ static int cfg_val_verify(void)
 		freeifaddrs(ifaddr);
 		return -1;
 	}
+
 	/* pkt_cnts 값 검사 */
 	pkt_cnts_str = cfg_val_find(CFG_PKT_CNTS);
 	if (!cfg_has_num_only(pkt_cnts_str)) {
@@ -440,6 +449,7 @@ static int cfg_val_verify(void)
 			pkt_cnts, MAX_PKT_CNTS);
 		return -1;
 	}
+
 	/* target_ip 값 검사 */
 	target_ip = cfg_val_find(CFG_TARGET_IP);
 	if ((inet_pton(AF_INET, target_ip, &ip_addr) != 1) &&
@@ -447,12 +457,14 @@ static int cfg_val_verify(void)
 		syslog(LOG_ERR, "Invalid target_ip(%s).", target_ip);
 		return -1;
 	}
+
 	/* target_port 값 검사 */
 	target_port_str = cfg_val_find(CFG_TARGET_PORT);
 	if (!cfg_has_num(target_port_str)) {
 	    syslog(LOG_ERR, "Invalid target_port(%s).", target_port_str);
 		return -1;
 	}
+
 	/* log_file 값 검사 */
 	log_file_str = cfg_val_find(CFG_LOG_FILE);
 	if (strlen(log_file_str) == 1 && strcmp(log_file_str, "1") == 0) {
@@ -463,6 +475,7 @@ static int cfg_val_verify(void)
 		syslog(LOG_ERR, "Invalid log_file(%s). (0 or 1)", log_file_str);
 		return -1;
 	}
+
 	/* dump_file 값 검사 */
 	dump_file_str = cfg_val_find(CFG_DUMP_FILE);
 	if (strlen(dump_file_str) == 1 && strcmp(dump_file_str, "1") == 0) {
@@ -473,6 +486,7 @@ static int cfg_val_verify(void)
 		syslog(LOG_ERR, "Invalid dump_file(%s). (0 or 1)", dump_file_str);
 		return -1;
 	}
+
 	/* sni_rst 값 검사 */
 	sni_rst_str = cfg_val_find(CFG_SNI_RST);
 	if (strlen(sni_rst_str) == 1 && strcmp(sni_rst_str, "1") == 0) {
@@ -483,6 +497,7 @@ static int cfg_val_verify(void)
 		syslog(LOG_ERR, "Invalid sni_rst(%s). (0 or 1)", sni_rst_str);
 		return -1;
 	}
+
 	/* cfg_interval 값 검사 */
 	cfg_interval_str = cfg_val_find(CFG_INTERVAL);
 	if (!cfg_has_num_only(cfg_interval_str)) {
@@ -499,13 +514,13 @@ static int cfg_val_verify(void)
 }
 
 /**
-@brief cfg_last_mtime_update 정적 함수
+@brief cfg_last_mtime_update 정적 함수.
 
-conf 파일의 마지막 수정 시간 갱신
-conf 파일 상태 읽기 오류 발생 시 0으로 갱신
+conf 파일의 마지막 수정 시간 갱신.
+conf 파일 상태 읽기 오류 발생 시 0으로 갱신.
 
-@param void
-@return void
+@param void.
+@return void.
 */
 static void cfg_last_mtime_update(void)
 {
@@ -520,12 +535,12 @@ static void cfg_last_mtime_update(void)
 }
 
 /**
-@brief cfg_invalid_err 정적 함수
+@brief cfg_invalid_err 정적 함수.
 
-conf 파일 파싱 중, 유효하지 않은 형식으로 설정되어 있는 경우 syslog 생성
+conf 파일 파싱 중, 유효하지 않은 형식으로 설정되어 있는 경우 syslog 생성.
 
-@param line_num 오류에 해당하는 줄 번호
-@return void
+@param line_num 오류에 해당하는 줄 번호.
+@return void.
 */
 static void cfg_invalid_err(int line_num)
 {
@@ -533,12 +548,12 @@ static void cfg_invalid_err(int line_num)
 }
 
 /**
-@brief cfg_has_num 정적 함수
+@brief cfg_has_num 정적 함수.
 
-설정에 숫자가 포함되어 있는지 확인
+설정에 숫자가 포함되어 있는지 확인.
 
-@param str 확인할 설정 문자열
-@return 숫자가 포함되어 있으면 true, 미포함 시 false 반환
+@param str 확인할 설정 문자열.
+@return 숫자가 포함되어 있으면 true, 미포함 시 false 반환.
 */
 static bool cfg_has_num(const char *str)
 {
@@ -554,12 +569,12 @@ static bool cfg_has_num(const char *str)
 }
 
 /**
-@brief cfg_has_num_only 정적 함수
+@brief cfg_has_num_only 정적 함수.
 
-설정에 숫자만 포함되어 있는지 확인
+설정에 숫자만 포함되어 있는지 확인.
 
-@param str 확인할 설정 문자열
-@return 숫자만 포함되어 있으면 true, 미포함 시 false 반환
+@param str 확인할 설정 문자열.
+@return 숫자만 포함되어 있으면 true, 미포함 시 false 반환.
 */
 static bool cfg_has_num_only(const char *str)
 {

@@ -1,8 +1,8 @@
 /**
 @file cfg.h
-@author 남태일(taeil.nam@monitorapp.com)
-@date 2025-07-15
-@brief conf 파일 관련 헤더파일
+@author 남태일(taeil.nam@monitorapp.com).
+@date 2025-07-15.
+@brief conf 파일 및 설정 관련 헤더파일.
 */
 
 #ifndef CFG_H

@@ -1,8 +1,8 @@
 /**
 @file ip.h
-@author 남태일(taeil.nam@monitorapp.com)
-@date 2025-07-23
-@brief ip 로직 관련 헤더 파일
+@author 남태일(taeil.nam@monitorapp.com).
+@date 2025-07-23.
+@brief ip 로직 관련 헤더 파일.
 */
 
 #ifndef IP_H
@@ -17,7 +17,7 @@
 ********************************************************************************
 */
 /**
-@brief ip 헤더를 나타내는 구조체
+@brief ip 헤더를 나타내는 구조체.
 */
 typedef struct  __attribute__((packed)) ip_hdr {
 	uint8_t ver_ihl; /**< version(4), ihl(4) */
