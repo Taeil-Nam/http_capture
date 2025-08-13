@@ -428,12 +428,8 @@ static void pkt_tcp_rst_send(pkt_t *pkt)
 
 	/* tcp 헤더 설정 */
 	tcp = (tcp_hdr_t *)(send_pkt + sizeof(eth_hdr_t) + sizeof(ip_hdr_t));
-	if (tcp_prev->src_port == htons(443)) {
-		tcp->src_port = tcp_prev->dst_port;
-	} else {
-		tcp->src_port = tcp_prev->src_port;
-	}
-	tcp->dst_port = htons(443);
+	tcp->src_port = tcp_prev->src_port;
+	tcp->dst_port = tcp_prev->dst_port;
 	tcp->seq_num = htonl(ntohl(tcp_prev->seq_num) + tcp_data_len_get(pkt));
 	tcp->ack_num = 0;
 	tcp->off_rsv = 0x50;
@@ -446,15 +442,18 @@ static void pkt_tcp_rst_send(pkt_t *pkt)
 	/* 패킷 전송 */
 	retval = pcap_inject(pcap_handle, send_pkt, sizeof(send_pkt));
 	if (retval == PCAP_ERROR) {
-		LOG(ERR, "Error sending tcp_rst : %s", pcap_geterr(pcap_handle));
+		syslog(LOG_ERR, "Error sending tcp_rst : %s", pcap_geterr(pcap_handle));
 		return;
 	} else if (retval == 0) {
-		LOG(ERR, "Error sending tcp_rst : sent packet size = 0");
+		syslog(LOG_ERR, "Error sending tcp_rst : sent packet size = 0");
 		return;
 	}
 
 	/* 패킷 전송 dump 생성 */
-	gettimeofday(&send_pkt_hdr.ts, NULL);
+	if (gettimeofday(&send_pkt_hdr.ts, NULL) == -1) {
+		syslog(LOG_ERR, "Error create tcp_rst packet dump: gettimeofday error");
+		return;
+	}
 	send_pkt_hdr.caplen = 60;
 	send_pkt_hdr.len = 60;
 	if (cfg_dump_is_used()) {
@@ -466,7 +465,7 @@ static void pkt_tcp_rst_send(pkt_t *pkt)
 	memset(&tcp_rst, 0, sizeof(pkt_t));
 	tcp_rst.pkt_data = (const u_char *)(&send_pkt);
 	tcp_rst.ip_offset = sizeof(eth_hdr_t);
-	tcp_rst.tcp_offset = tcp_rst.ip_offset + sizeof(ip_hdr_t);
+	tcp_rst.tcp_offset = tcp_rst.ip_offset + ip_hdr_len_get(&tcp_rst);
 	pkt_info_log(&tcp_rst);
 
 	/* 패킷 캡처 카운트 증가 */
