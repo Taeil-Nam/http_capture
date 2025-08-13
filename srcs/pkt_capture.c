@@ -449,6 +449,17 @@ static void pkt_tcp_rst_send(pkt_t *pkt)
 		return;
 	}
 
+	/* 패킷 전송 log 출력 */
+	LOG(INFO, "=====SENT TCP RST PACKET=====[START]");
+	memset(&tcp_rst, 0, sizeof(pkt_t));
+	tcp_rst.pkt_data = (const u_char *)(&send_pkt);
+	tcp_rst.ip_offset = sizeof(eth_hdr_t);
+	tcp_rst.tcp_offset = tcp_rst.ip_offset + ip_hdr_len_get(&tcp_rst);
+	pkt_info_log(&tcp_rst);
+
+	/* 패킷 캡처 카운트 증가 */
+	cur_pkt_cnts++;
+
 	/* 패킷 전송 dump 생성 */
 	if (gettimeofday(&send_pkt_hdr.ts, NULL) == -1) {
 		syslog(LOG_ERR, "Error create tcp_rst packet dump: gettimeofday error");
@@ -460,16 +471,6 @@ static void pkt_tcp_rst_send(pkt_t *pkt)
 		pcap_dump((u_char *)dumper, &send_pkt_hdr, send_pkt);
 	}
 
-	/* 패킷 전송 log 출력 */
-	LOG(INFO, "=====SENT TCP RST PACKET=====[START]");
-	memset(&tcp_rst, 0, sizeof(pkt_t));
-	tcp_rst.pkt_data = (const u_char *)(&send_pkt);
-	tcp_rst.ip_offset = sizeof(eth_hdr_t);
-	tcp_rst.tcp_offset = tcp_rst.ip_offset + ip_hdr_len_get(&tcp_rst);
-	pkt_info_log(&tcp_rst);
-
-	/* 패킷 캡처 카운트 증가 */
-	cur_pkt_cnts++;
 }
 
 /**
