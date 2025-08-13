@@ -345,7 +345,7 @@ static int pkt_inspect(pkt_t *pkt)
 		return -1;
 	}
 	ip = ip_hdr_get(pkt);
-	pkt->tcp_offset = pkt->ip_offset + ((ip->ver_ihl & 0x0F) * 4);
+	pkt->tcp_offset = pkt->ip_offset + ip_hdr_len_get(pkt);
 	if (!inet_ntop(AF_INET, &ip->src_ip, src_ip_str, INET_ADDRSTRLEN)) {
 		LOG(ERR, "%s", strerror(errno));
 		return -1;
