@@ -470,7 +470,6 @@ static void pkt_tcp_rst_send(pkt_t *pkt)
 	if (cfg_dump_is_used()) {
 		pcap_dump((u_char *)dumper, &send_pkt_hdr, send_pkt);
 	}
-
 }
 
 /**
